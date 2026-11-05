@@ -5,30 +5,7 @@
   const FIELDS = window.FORMFILL_FIELDS;
   const SKIP_TYPES = new Set(['hidden', 'submit', 'button', 'file', 'password', 'image', 'reset']);
 
-  const norm = (s) => String(s || '')
-    .replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_\-.\[\]]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
-
-  function labelText(el) {
-    const parts = [];
-    if (el.labels) for (const l of el.labels) parts.push(l.textContent);
-    const by = el.getAttribute('aria-labelledby');
-    if (by) by.split(/\s+/).forEach((id) => { const n = document.getElementById(id); if (n) parts.push(n.textContent); });
-    if (!parts.length) { const l = el.closest('label'); if (l) parts.push(l.textContent); }
-    return parts.join(' ');
-  }
-
-  function groupQuestion(el) { // radio/checkbox: the question lives in the fieldset legend, not the option's label
-    if (el.type !== 'radio' && el.type !== 'checkbox') return '';
-    const fs = el.closest('fieldset, [role=radiogroup], [role=group]');
-    if (!fs) return '';
-    const lg = fs.querySelector('legend');
-    return (lg ? lg.textContent : '') + ' ' + (fs.getAttribute('aria-label') || '');
-  }
-
-  function signature(el) {
-    return norm([groupQuestion(el), el.name, el.id, el.placeholder,
-      el.getAttribute('aria-label'), el.getAttribute('data-automation-id'), labelText(el)].join(' '));
-  }
+  const { norm, labelText, signature } = window.FORMFILL_SIG; // shared with teach.js, see signature.js
 
   function visible(el) { return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); }
 

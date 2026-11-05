@@ -14,13 +14,34 @@ async function loadState() {
 async function saveState(patch) {
   await chrome.storage.local.set(patch);
 }
+// Teach-a-field support. Pure: returns a new custom-rule list with `match` set to `value`
+// (an existing rule with the same trigger is updated, not duplicated).
+function addCustomRule(custom, match, value) {
+  const key = self.FORMFILL_SIG.norm(match);
+  const rules = (custom || []).map((r) => ({ ...r }));
+  const hit = rules.find((r) => self.FORMFILL_SIG.norm(r.match) === key);
+  if (hit) hit.value = value; else rules.push({ match: String(match).trim(), value });
+  return rules;
+}
+async function getTaughtRule(match) {
+  const { profile } = await loadState();
+  const key = self.FORMFILL_SIG.norm(match);
+  const hit = (profile.custom || []).find((r) => self.FORMFILL_SIG.norm(r.match) === key);
+  return { value: hit ? hit.value : '', profileName: profile.name };
+}
+async function saveTaughtRule(match, value) {
+  const { profiles, activeId } = await loadState();
+  const p = profiles.find((x) => x.id === activeId);
+  p.custom = addCustomRule(p.custom, match, value);
+  await saveState({ profiles, activeId });
+}
 async function fillActiveTab(overwriteOverride) {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !/^https?:/.test(tab.url || '')) return { error: 'This page cannot be filled.' };
   const { profile, settings } = await loadState();
   if (typeof overwriteOverride === 'boolean') settings.overwrite = overwriteOverride;
   const target = { tabId: tab.id, allFrames: true };
-  await chrome.scripting.executeScript({ target, files: ['fields.js', 'filler.js'] });
+  await chrome.scripting.executeScript({ target, files: ['fields.js', 'signature.js', 'filler.js'] });
   const results = await chrome.scripting.executeScript({
     target, args: [profile, settings], func: (p, s) => window.__formFill.fill(p, s)
   });

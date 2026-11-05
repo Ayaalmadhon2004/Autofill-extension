@@ -11,6 +11,7 @@ Fills job / internship / application forms from a profile you control. No server
 ## How it works
 - `fields.js`: one list of profile fields + how each is recognised (autocomplete attribute, label, name, id, placeholder).
 - `filler.js`: injected on demand; sets values the way React/Vue forms expect; handles selects, radios, checkboxes.
+- **English and Arabic interface (RTL)**: the whole UI (popup, Options, My applications, welcome page, the in-page prompts, the "Required" marker, context menus and error messages) is available in English and Arabic. Pick it with the **Language / اللغة** switcher in Options or the popup (`Auto` follows the browser UI language; stored as `uiLang` in `chrome.storage.local`). Arabic switches the page to right-to-left and uses logical CSS properties. All texts live in `i18n.js` (`FORMFILL_I18N.en` / `.ar`, flat dotted keys, `{placeholders}`, plural forms for Arabic's six categories). **To add a language:** copy the `en` object in `i18n.js`, translate the values (keep keys and placeholders), register it in `DICT`/`LANGS` (and `RTL` if right-to-left), add a `lang.<code>` entry and run `node tests/i18n.core.test.js`, which checks key and placeholder parity and scans for hard-coded English. Not translated: the regex lists used to recognise fields, the prompt sent to the AI model, and the manifest name/description.
 - **Multiple profiles** (e.g. English and Arabic): create, duplicate, rename and delete them in Options, and pick the one to use from the popup. Arabic form labels (الاسم الأول، البريد الإلكتروني، الجامعة…) are recognised too.
 - **Custom rules** (Options): "label contains X → answer Y". This is how it learns questions that are specific to you.
 - **Teach this field**: right-click any form field → **Teach Form Filler this field…**, type the answer, and it is saved as a custom rule in the active profile (the same question again updates the rule). Works for text boxes, dropdowns, radios and checkboxes. Uses the `contextMenus` permission; the right-click is only read when you pick the menu item.
@@ -37,4 +38,6 @@ Everything stays in your browser (`chrome.storage.local`), with **one optional e
 Zip this folder and upload to the Chrome Web Store (one-time $5 developer fee), then link the store page from LinkedIn.
 
 ## Tests
+Localisation: `node tests/i18n.core.test.js` and `NODE_PATH=$(npm root -g) node tests/i18n.pw.js` (Arabic/RTL rendering, screenshots in `$SHOTS`).
+
 `NODE_PATH=$(npm root -g) node tests/teaching.fill.test.js` (also `teaching.teach.test.js`, `teaching.options.test.js`) — Playwright, no network. AI suggestions: `node tests/ai.core.test.js`, `tests/ai.prompt.test.js`, `tests/ai.options.test.js` (fetch and chrome.* are mocked; the real API is never called).

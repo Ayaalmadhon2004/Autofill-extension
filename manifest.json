@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "One-Click Form Filler",
+  "version": "0.1.0",
+  "description": "Fill job, internship and application forms in one click from a profile you control. Your data never leaves your browser.",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "action": { "default_popup": "popup.html", "default_title": "Fill this page" },
+  "options_page": "options.html",
+  "background": { "service_worker": "background.js" },
+  "commands": {
+    "fill-page": {
+      "suggested_key": { "default": "Ctrl+Shift+F", "mac": "Command+Shift+F" },
+      "description": "Fill the current page"
+    }
+  },
+  "icons": { "16": "icons/16.png", "48": "icons/48.png", "128": "icons/128.png" }
+}

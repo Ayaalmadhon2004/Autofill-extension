@@ -12,7 +12,8 @@ async function loadState() {
     profiles = [{ id: 'default', name: 'English', data: old.data || {}, custom: old.custom || [] }];
   }
   const activeId = profiles.some((p) => p.id === s.activeId) ? s.activeId : profiles[0].id;
-  return { profiles, activeId, profile: profiles.find((p) => p.id === activeId), settings: s.settings };
+  const settings = Object.assign({}, FormFillSecurity.DEFAULT_SETTINGS, s.settings);
+  return { profiles, activeId, profile: profiles.find((p) => p.id === activeId), settings };
 }
 async function saveState(patch) {
   patch = Object.assign({}, patch);
@@ -31,6 +32,8 @@ async function fillActiveTab(overwriteOverride) {
     throw e;
   }
   const { profile, settings } = state;
+  const site = FormFillSecurity.checkSite(tab.url, settings); // optional allowlist
+  if (!site.allowed) return { error: FormFillSecurity.siteRefusal(site.host), blocked: true, host: site.host };
   if (typeof overwriteOverride === 'boolean') settings.overwrite = overwriteOverride;
   const target = { tabId: tab.id, allFrames: true };
   await chrome.scripting.executeScript({ target, files: ['fields.js', 'groups.js', 'filler.js'] });

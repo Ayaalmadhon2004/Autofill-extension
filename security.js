@@ -2,6 +2,7 @@
 //  - Passphrase lock: profiles encrypted at rest with AES-GCM; key from PBKDF2-SHA256 (random salt, random IV per write).
 //    The derived key is kept only in chrome.storage.session (cleared when the browser closes).
 //    There is NO recovery: a forgotten passphrase means the encrypted data cannot be read.
+//  - Site allowlist: optional "only fill on these sites" setting, matched on the tab's hostname.
 // Nothing here sends data anywhere.
 (function (root) {
   const ITER = 600000; // PBKDF2-SHA256 iterations for new vaults (never below 310000)
@@ -110,7 +111,53 @@
     await lock();
   }
 
+  // ---- settings (plain text; nothing secret) ---------------------------------------------------------------
+  const DEFAULT_SETTINGS = { overwrite: false, allowlistEnabled: false, allowedSites: [] };
+  async function updateSettings(fn) { // read-modify-write so independent features never clobber each other's keys
+    const cur = Object.assign({}, DEFAULT_SETTINGS, (await chrome.storage.local.get({ settings: null })).settings);
+    const next = fn(cur) || cur;
+    await chrome.storage.local.set({ settings: next });
+    return next;
+  }
+
+  // ---- site allowlist ---------------------------------------------------------------------------------------
+  // Accepts "example.com", "*.example.com", or a pasted URL. Returns a normalised pattern or null if unusable.
+  // "example.com" matches only that host. "*.example.com" matches example.com and every subdomain.
+  function normalizePattern(input) {
+    let s = String(input == null ? '' : input).trim().toLowerCase();
+    if (!s) return null;
+    s = s.replace(/^[a-z][a-z0-9+.\-]*:\/\//, '').split(/[\/?#]/)[0].replace(/^[^@]*@/, '').replace(/:\d+$/, '').replace(/\.$/, '');
+    const wild = s.startsWith('*.');
+    if (wild) s = s.slice(2);
+    if (!s || s.includes('*') || !/^[^\s!"#$%&'()+,/:;<=>?@[\\\]^`{|}~]+$/.test(s)) return null;
+    let host;
+    try { host = new URL('http://' + s).hostname; } catch { return null; }
+    if (host !== 'localhost' && !/\./.test(host)) return null;
+    if (wild && host.split('.').length < 2) return null;
+    return (wild ? '*.' : '') + host;
+  }
+  function hostMatches(host, pattern) {
+    host = String(host || '').toLowerCase().replace(/\.$/, '');
+    if (!host || !pattern) return false;
+    return pattern.startsWith('*.') ? host === pattern.slice(2) || host.endsWith(pattern.slice(1)) : host === pattern;
+  }
+  // { allowed, host }. Allowed unless the allowlist is on and the tab's host is not on it.
+  function checkSite(url, settings) {
+    let host = '';
+    try { host = new URL(url).hostname; } catch { /* not a URL */ }
+    if (!settings || !settings.allowlistEnabled) return { allowed: true, host };
+    const list = (settings.allowedSites || []).map(normalizePattern).filter(Boolean);
+    return { allowed: !!host && list.some((p) => hostMatches(host, p)), host };
+  }
+  const siteRefusal = (host) => 'Not filled: ' + (host || 'this site') + ' is not on your "Only fill on these sites" list.';
+  async function allowHost(host) { // popup: "Always allow this site"
+    const p = normalizePattern(host);
+    if (!p) throw err('BAD_SITE', 'Cannot allow this site.');
+    return updateSettings((s) => { if (!s.allowedSites.some((x) => normalizePattern(x) === p)) s.allowedSites = [...s.allowedSites, p]; return s; });
+  }
+
   const api = {
+    DEFAULT_SETTINGS, updateSettings, normalizePattern, hostMatches, checkSite, siteRefusal, allowHost,
     ITER, MIN_ITER, MIN_PASSPHRASE,
     deriveKey, createEnvelope, openEnvelope, sealWithKey, encryptWith, decryptWith,
     isEnabled, isLocked, lock, unlock, enable, change, disable, openVault, sealProfiles

@@ -13,7 +13,8 @@ function secField(label, id, type, extra) { // real <label> for every control
 }
 function secPanel(id, title) {
   const fs = secEl('fieldset', { id }, secEl('legend', { textContent: title }));
-  $('security').appendChild(fs);
+  const old = $(id);
+  if (old) old.replaceWith(fs); else $('security').appendChild(fs); // re-render keeps its place
   return fs;
 }
 function secMessage(panel, text, bad) {
@@ -45,7 +46,6 @@ function showOptionsUnlock() {
 
 // ---- Passphrase lock panel -----------------------------------------------------------------------------
 async function renderPassphrasePanel() {
-  const old = $('sec-pass'); if (old) old.remove();
   const enabled = await FormFillSecurity.isEnabled();
   const panel = secPanel('sec-pass', 'Passphrase lock');
   const min = FormFillSecurity.MIN_PASSPHRASE;
@@ -89,8 +89,33 @@ async function renderPassphrasePanel() {
   }
 }
 
-function initSecurityOptions() {
+async function initSecurityOptions() {
   if (!$('security')) return;
   $('security').textContent = '';
-  renderPassphrasePanel();
+  await renderPassphrasePanel();
+  await renderAllowlistPanel();
+}
+
+// ---- Site allowlist panel ----------------------------------------------------------------------------------
+async function renderAllowlistPanel() {
+  const { settings } = await loadState();
+  const panel = secPanel('sec-sites', 'Only fill on these sites');
+  panel.append(
+    secEl('p', { textContent: 'Optional. When on, Fill (button and Ctrl+Shift+F) is refused on any site not listed here. One site per line. "example.com" matches only that host; "*.example.com" matches example.com and all its subdomains. You can also add the current site from the popup.' }),
+    secEl('label', { htmlFor: 'sites-on', style: 'display:flex;gap:8px;align-items:center;min-height:44px' },
+      secEl('input', { type: 'checkbox', id: 'sites-on', checked: !!settings.allowlistEnabled, style: 'width:24px;min-height:24px;margin:0' }), 'Only fill on the sites listed below'),
+    secField('Allowed sites', 'sites-list', 'text'));
+  const ta = secEl('textarea', { id: 'sites-list', dir: 'ltr', value: (settings.allowedSites || []).join('\n'), placeholder: 'careers.example.com\n*.greenhouse.io' });
+  panel.querySelector('label[for=sites-list]').replaceChildren('Allowed sites', ta);
+  panel.append(secEl('p', {}, secEl('button', { type: 'button', textContent: 'Save site list', onclick: async () => {
+    const lines = ta.value.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+    const good = [], bad = [];
+    for (const l of lines) { const p = FormFillSecurity.normalizePattern(l); if (p) { if (!good.includes(p)) good.push(p); } else bad.push(l); }
+    if (bad.length) return secMessage(panel, 'Not a valid site: ' + bad.join(', '), true);
+    const on = $('sites-on').checked;
+    if (on && !good.length && !confirm('The list is empty, so Fill will be refused everywhere. Continue?')) return;
+    await FormFillSecurity.updateSettings((s) => { s.allowlistEnabled = on; s.allowedSites = good; return s; });
+    ta.value = good.join('\n');
+    secMessage(panel, on ? 'Saved. Fill is limited to ' + good.length + ' site' + (good.length === 1 ? '' : 's') + '.' : 'Saved. The list is off, Fill works on every site.');
+  } })));
 }

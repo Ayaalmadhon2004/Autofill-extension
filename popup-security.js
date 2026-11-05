@@ -23,3 +23,25 @@ async function initLockLink() { // "Lock now" only when a passphrase is set
   const b = $('lockLink'); b.hidden = false;
   b.onclick = async () => { await FormFillSecurity.lock(); location.reload(); };
 }
+
+// ---- Site allowlist ("Only fill on these sites") ---------------------------------------------------------
+function offerAllow(host) { // show the one-click "Always allow this site" button
+  const b = $('allowSite'); if (!host) return;
+  b.hidden = false; b.textContent = 'Always allow ' + host;
+  b.onclick = async () => {
+    try {
+      await FormFillSecurity.allowHost(host);
+      b.hidden = true; $('status').className = 'ok';
+      $('status').textContent = '\u2713 ' + host + ' is now allowed. Press Fill.';
+    } catch (x) { $('status').className = 'err'; $('status').textContent = 'Error: ' + x.message; }
+  };
+}
+async function initAllowlist(settings) { // tell the user up front when this site would be refused
+  if (!settings.allowlistEnabled) return;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab || !/^https?:/.test(tab.url || '')) return;
+  const site = FormFillSecurity.checkSite(tab.url, settings);
+  if (site.allowed) return;
+  $('status').className = 'err'; $('status').textContent = '\u26A0 ' + FormFillSecurity.siteRefusal(site.host);
+  offerAllow(site.host);
+}

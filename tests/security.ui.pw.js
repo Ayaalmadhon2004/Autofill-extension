@@ -78,6 +78,35 @@ let n = 0; const ok = (m) => { n++; console.log('ok -', m); };
     await ctx.close();
   }
 
+
+  // ---- site allowlist: options + popup ---------------------------------------------------------------------
+  {
+    const ctx = await browser.newContext(); const page = await ctx.newPage();
+    const h = await installChrome(ctx, { local: { profiles: [profile], activeId: 'default', settings: { overwrite: false } }, tabUrl: 'https://jobs.other.com/apply' });
+    await page.goto(h.url('options.html'));
+    await page.check('#sites-on'); await page.fill('#sites-list', 'careers.acme.com\nnot a site');
+    await page.click('text=Save site list');
+    assert.match(await page.textContent('#sec-sites .sec-msg'), /Not a valid site: not a site/); ok('invalid entries are reported, nothing saved');
+    await page.fill('#sites-list', 'https://careers.acme.com/jobs\n*.greenhouse.io');
+    await page.click('text=Save site list');
+    await page.waitForSelector('#sec-sites .sec-msg:has-text("limited to 2 sites")');
+    assert.deepEqual(h.stores.local.settings.allowedSites, ['careers.acme.com', '*.greenhouse.io']); assert.equal(h.stores.local.settings.allowlistEnabled, true); ok('allowlist saved, URLs normalised');
+
+    const popup = await ctx.newPage(); await popup.goto(h.url('popup.html'));
+    await popup.waitForSelector('#allowSite', { state: 'visible' });
+    assert.match(await popup.textContent('#status'), /jobs\.other\.com is not on your/); ok('popup warns up front about a refused site');
+    await popup.click('#fill');
+    await popup.waitForFunction(() => document.getElementById('status').textContent.includes('Error: Not filled'));
+    assert.equal(h.calls.executed.length, 0); ok('Fill refused with a clear message, nothing injected');
+    await popup.click('#allowSite');
+    await popup.waitForFunction(() => document.getElementById('status').textContent.includes('is now allowed'));
+    assert.ok(h.stores.local.settings.allowedSites.includes('jobs.other.com')); ok('one-click "Always allow this site"');
+    await popup.click('#fill');
+    await popup.waitForFunction(() => document.getElementById('status').textContent.includes('Filled'));
+    ok('Fill works after allowing the site');
+    await ctx.close();
+  }
+
   await browser.close();
   console.log(`\n${n} checks passed`);
 })().catch((e) => { console.error(e); process.exit(1); });

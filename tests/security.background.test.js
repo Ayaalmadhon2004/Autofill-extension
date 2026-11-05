@@ -41,5 +41,10 @@ function boot({ local, url = 'https://example.com/apply' }) {
     await b.press();
     assert.equal(b.badge.text[0], '\u{1F512}'); assert.match(b.badge.title[0], /Locked/);
   });
+  await t('site not on the allowlist: "!" badge and tooltip naming the site', async () => {
+    const b = boot({ local: { profiles, settings: { overwrite: false, allowlistEnabled: true, allowedSites: ['careers.acme.com'] } }, url: 'https://other.com/apply' });
+    await b.press();
+    assert.equal(b.badge.text[0], '!'); assert.match(b.badge.title[0], /other\.com is not on your/);
+  });
   console.log(`\n${n} tests passed`);
 })().catch((e) => { console.error(e); process.exit(1); });

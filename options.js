@@ -1,17 +1,18 @@
 const $ = (id) => document.getElementById(id);
-const flashMsg = (t) => { $('msg').textContent = t; setTimeout(() => { $('msg').textContent = ''; }, 2500); };
+const flashMsg = (text) => { $('msg').textContent = text; setTimeout(() => { $('msg').textContent = ''; }, 2500); };
 
 function render(profile) {
   const form = $('form'); form.textContent = '';
   const groups = [...new Set(window.FORMFILL_FIELDS.map((f) => f.group))];
   for (const g of groups) {
     const fs = document.createElement('fieldset');
-    fs.innerHTML = '<legend></legend><div class="grid"></div>'; fs.firstChild.textContent = g;
+    fs.innerHTML = '<legend></legend><div class="grid"></div>'; fs.firstChild.textContent = t('fieldGroup.' + g);
     for (const f of window.FORMFILL_FIELDS.filter((x) => x.group === g)) {
-      const l = document.createElement('label'); l.textContent = f.label;
+      const l = document.createElement('label'); l.textContent = t('field.' + f.key);
       const i = document.createElement(f.type === 'textarea' ? 'textarea' : 'input');
       if (f.type !== 'textarea') i.type = f.type;
-      i.name = f.key; i.dir = 'auto'; i.value = (profile.data || {})[f.key] || '';
+      // addresses and numbers stay left-to-right
+      i.name = f.key; i.dir = ['email', 'tel', 'url'].includes(f.type) ? 'ltr' : 'auto'; i.value = (profile.data || {})[f.key] || '';
       l.appendChild(i); fs.lastChild.appendChild(l);
       if (f.type === 'textarea') l.style.gridColumn = '1 / -1';
     }
@@ -24,7 +25,10 @@ function render(profile) {
 
 function addRule(r) {
   const row = document.createElement('div'); row.className = 'rule';
-  row.innerHTML = '<input aria-label="Label contains" placeholder="Label contains…" dir="auto"><input aria-label="Answer" placeholder="Answer" dir="auto"><button type="button" class="sec" aria-label="Remove rule">✕</button>';
+  row.innerHTML = '<input dir="auto"><input dir="auto"><button type="button" class="sec">✕</button>';
+  row.children[0].setAttribute('aria-label', t('options.rules.labelContains')); row.children[0].placeholder = t('options.rules.labelContainsPh');
+  row.children[1].setAttribute('aria-label', t('common.answer')); row.children[1].placeholder = t('options.rules.answerPh');
+  row.children[2].setAttribute('aria-label', t('options.rules.remove'));
   row.children[0].value = (r && r.match) || ''; row.children[1].value = (r && r.value) || '';
   row.children[2].onclick = () => row.remove();
   $('rules').appendChild(row);
@@ -58,25 +62,33 @@ function showProfile() {
 function switchTo(id) { syncCurrent(); state.activeId = id; showProfile(); }
 
 (async () => {
-  let s;
-  try { s = await loadState(); } catch (e) { if (e.code === 'LOCKED') { showOptionsUnlock(); return; } throw e; }
+  let s, locked = false;
+  try { s = await loadState(); } catch (e) { if (e.code === 'LOCKED') locked = true; else throw e; }
+  await FORMFILL_I18N.ready; // normally already settled by now
+  FORMFILL_I18N.applyDom(document);
+  FORMFILL_I18N.onChange(() => { // re-draw in place, keeping what has been typed but not saved yet
+    if (!state) { location.reload(); return; }
+    syncCurrent(); showProfile(); initSecurityOptions();
+  });
+  if (locked) { showOptionsUnlock(); return; } // the lock screen has its own language switcher
+  FORMFILL_I18N.mountSwitcher($('langBox'));
   state = { profiles: s.profiles, activeId: s.activeId };
   showProfile();
   initSecurityOptions();
   $('psel').onchange = (e) => switchTo(e.target.value);
   $('pnew').onclick = () => {
     syncCurrent();
-    const p = { id: 'p' + Date.now(), name: 'New profile', data: {}, custom: [], experience: [], education: [] };
+    const p = { id: 'p' + Date.now(), name: t('options.newProfileName'), data: {}, custom: [], experience: [], education: [] };
     state.profiles.push(p); state.activeId = p.id; showProfile(); $('pname').focus(); $('pname').select();
   };
   $('pdup').onclick = () => {
     syncCurrent();
     const c = current();
-    const p = { id: 'p' + Date.now(), name: c.name + ' (copy)', data: { ...c.data }, custom: c.custom.map((r) => ({ ...r })), answers: { ...c.answers }, ...cloneEntries(c) };
+    const p = { id: 'p' + Date.now(), name: t('options.copyName', { name: c.name }), data: { ...c.data }, custom: c.custom.map((r) => ({ ...r })), answers: { ...c.answers }, ...cloneEntries(c) };
     state.profiles.push(p); state.activeId = p.id; showProfile(); $('pname').focus(); $('pname').select();
   };
   $('pdel').onclick = () => {
-    if (state.profiles.length < 2 || !confirm('Delete profile "' + current().name + '"?')) return;
+    if (state.profiles.length < 2 || !confirm(t('options.confirmDelete', { name: current().name }))) return;
     state.profiles = state.profiles.filter((p) => p.id !== state.activeId);
     state.activeId = state.profiles[0].id; showProfile();
   };
@@ -85,7 +97,7 @@ function switchTo(id) { syncCurrent(); state.activeId = id; showProfile(); }
     syncCurrent();
     await saveState({ profiles: state.profiles, activeId: state.activeId });
     await chrome.storage.local.remove('profile'); // old single-profile key
-    showProfile(); flashMsg('Saved ✓');
+    showProfile(); flashMsg(t('options.saved'));
   };
   $('export').onclick = () => {
     syncCurrent();
@@ -98,20 +110,21 @@ function switchTo(id) { syncCurrent(); state.activeId = id; showProfile(); }
     try {
       const p = JSON.parse(await e.target.files[0].text());
       syncCurrent();
-      const n = { id: 'p' + Date.now(), name: p.name || 'Imported', data: p.data || {}, custom: p.custom || [], answers: p.answers || {}, experience: p.experience || [], education: p.education || [] };
-      state.profiles.push(n); state.activeId = n.id; showProfile(); flashMsg('Imported as a new profile — press Save');
-    } catch { flashMsg('Invalid file'); }
+      const n = { id: 'p' + Date.now(), name: p.name || t('profile.imported'), data: p.data || {}, custom: p.custom || [], answers: p.answers || {}, experience: p.experience || [], education: p.education || [] };
+      state.profiles.push(n); state.activeId = n.id; showProfile(); flashMsg(t('options.importedFlash'));
+    } catch { flashMsg(t('options.invalidFile')); }
   };
 })();
 
 // --- Application tracker setting (self-contained: saves immediately, independent of the Save button) ---
 (async () => {
+  await FORMFILL_I18N.ready;
   const box = $('trackApps');
   const { settings } = await chrome.storage.local.get({ settings: {} });
   box.checked = !(settings && settings.trackApplications === false); // default ON
   box.onchange = async () => {
     const cur = (await chrome.storage.local.get({ settings: {} })).settings || {};
     await chrome.storage.local.set({ settings: { ...cur, trackApplications: box.checked } });
-    flashMsg('Saved ✓');
+    flashMsg(t('options.saved'));
   };
 })();

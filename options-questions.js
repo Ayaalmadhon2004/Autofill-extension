@@ -5,11 +5,11 @@
     const host = document.getElementById('answers'); host.textContent = '';
     const saved = profile.answers || {};
     window.FORMFILL_QUESTIONS.forEach((q, i) => {
-      const lab = document.createElement('label'); lab.textContent = q.label;
+      const lab = document.createElement('label'); lab.textContent = t('question.' + q.key);
       let input;
       if (q.kind === 'yesno') {
         input = document.createElement('select');
-        for (const [v, t] of [['', 'No answer (skip)'], ['Yes', 'Yes'], ['No', 'No']]) input.add(new Option(t, v));
+        for (const [v, text] of [['', t('options.questions.skip')], ['Yes', t('common.yes')], ['No', t('common.no')]]) input.add(new Option(text, v)); // stored values stay Yes/No
       } else {
         input = document.createElement('input'); input.type = 'text'; input.dir = 'auto';
         if (q.suggestions) {

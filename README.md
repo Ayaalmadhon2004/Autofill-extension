@@ -11,8 +11,9 @@ Fills job / internship / application forms from a profile you control. No server
 ## How it works
 - `fields.js`: one list of profile fields + how each is recognised (autocomplete attribute, label, name, id, placeholder).
 - `filler.js`: injected on demand; sets values the way React/Vue forms expect; handles selects, radios, checkboxes.
+- **Multiple profiles** (e.g. English and Arabic): create, duplicate, rename and delete them in Options, and pick the one to use from the popup. Arabic form labels (الاسم الأول، البريد الإلكتروني، الجامعة…) are recognised too.
 - **Custom rules** (Options): "label contains X → answer Y". This is how it learns questions that are specific to you.
-- **Export / Import JSON** in Options lets others share or back up a profile.
+- **Export / Import JSON** in Options shares or backs up the current profile; importing adds it as a new profile.
 - Permissions: only `activeTab`, `scripting`, `storage`. It reads no page unless you click.
 
 ## Sharing

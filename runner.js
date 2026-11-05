@@ -1,7 +1,18 @@
-// Shared by popup and background: inject the filler into the active tab (all frames) and run it.
+// Shared by popup, options and background.
+// Storage shape: { profiles: [{id, name, data, custom}], activeId, settings }.
+// Older installs stored a single `profile`; it is migrated on first read.
 async function loadState() {
-  const s = await chrome.storage.local.get({ profile: { data: {}, custom: [] }, settings: { overwrite: false } });
-  return s;
+  const s = await chrome.storage.local.get({ profiles: null, activeId: null, profile: null, settings: { overwrite: false } });
+  let profiles = s.profiles;
+  if (!profiles || !profiles.length) {
+    const old = s.profile || {};
+    profiles = [{ id: 'default', name: 'English', data: old.data || {}, custom: old.custom || [] }];
+  }
+  const activeId = profiles.some((p) => p.id === s.activeId) ? s.activeId : profiles[0].id;
+  return { profiles, activeId, profile: profiles.find((p) => p.id === activeId), settings: s.settings };
+}
+async function saveState(patch) {
+  await chrome.storage.local.set(patch);
 }
 async function fillActiveTab(overwriteOverride) {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });

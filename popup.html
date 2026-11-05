@@ -5,9 +5,12 @@
   button{width:100%;min-height:44px;font-size:15px;font-weight:600;border:0;border-radius:8px;background:#1a56db;color:#fff;cursor:pointer}
   button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #f5a623;outline-offset:2px}
   label{display:flex;gap:8px;align-items:center;margin:12px 0;min-height:24px}
+  select{width:100%;min-height:44px;font:inherit;padding:0 8px;margin-bottom:10px;border:1px solid #6b7080;border-radius:6px}
   #status{margin:10px 0 0;min-height:20px} .err{color:#b3261e} .ok{color:#17663a}
   a{color:#1a56db}
 </style></head><body>
+<label for="profile">Profile</label>
+<select id="profile"></select>
 <button id="fill" type="button">Fill this page</button>
 <label><input type="checkbox" id="overwrite"> Overwrite fields that already have text</label>
 <p id="status" role="status"></p>

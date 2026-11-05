@@ -19,10 +19,12 @@ async function fillActiveTab(overwriteOverride) {
   if (!tab || !/^https?:/.test(tab.url || '')) return { error: 'This page cannot be filled.' };
   const { profile, settings } = await loadState();
   if (typeof overwriteOverride === 'boolean') settings.overwrite = overwriteOverride;
+  const cvKey = 'cv_' + profile.id; // CV file stored per profile by options.js (Documents section)
+  const cv = (await chrome.storage.local.get(cvKey))[cvKey] || null;
   const target = { tabId: tab.id, allFrames: true };
   await chrome.scripting.executeScript({ target, files: ['fields.js', 'filler.js'] });
   const results = await chrome.scripting.executeScript({
-    target, args: [profile, settings], func: (p, s) => window.__formFill.fill(p, s)
+    target, args: [profile, settings, cv], func: (p, s, c) => window.__formFill.fill(p, s, c)
   });
   const all = results.map((r) => r.result).filter(Boolean);
   const filled = all.reduce((n, r) => n + r.filled, 0);

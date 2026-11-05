@@ -1,0 +1,48 @@
+// Options page "Documents" section: per-profile CV stored in chrome.storage.local under `cv_<profileId>`
+// as { name, type, size, b64 }. options.js calls window.refreshDocuments(profileId, allProfileIds).
+(function () {
+  const MAX = 5 * 1024 * 1024;
+  const TYPES = { pdf: 'application/pdf', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
+  const $ = (id) => document.getElementById(id);
+  let pid = null;
+  const say = (t) => { $('cvMsg').textContent = t; };
+
+  function toB64(buf) {
+    let s = ''; const b = new Uint8Array(buf);
+    for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+    return btoa(s);
+  }
+
+  async function show() {
+    const key = 'cv_' + pid;
+    const cv = (await chrome.storage.local.get(key))[key];
+    $('cvCurrent').textContent = cv ? `Current CV: ${cv.name} (${Math.max(1, Math.round(cv.size / 1024))} KB)` : 'No CV uploaded for this profile.';
+    $('cvRemove').disabled = !cv;
+  }
+
+  window.refreshDocuments = async (id, allIds) => {
+    pid = id; say('');
+    if (allIds) { // drop CVs of deleted profiles
+      const all = await chrome.storage.local.get(null);
+      const stale = Object.keys(all).filter((k) => k.startsWith('cv_') && !allIds.includes(k.slice(3)));
+      if (stale.length) await chrome.storage.local.remove(stale);
+    }
+    show();
+  };
+
+  // options.js may have rendered a profile before this script ran
+  if (typeof state !== 'undefined' && state) window.refreshDocuments(state.activeId, state.profiles.map((p) => p.id));
+
+  $('cvFile').onchange = async (e) => {
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    const ext = f.name.split('.').pop().toLowerCase();
+    if (!TYPES[ext]) return say('Only PDF or DOCX files are accepted.');
+    if (f.size > MAX) return say('File is larger than 5 MB.');
+    try {
+      await chrome.storage.local.set({ ['cv_' + pid]: { name: f.name, type: TYPES[ext], size: f.size, b64: toB64(await f.arrayBuffer()) } });
+      say('CV saved ✓'); show();
+    } catch { say('Could not save (browser storage is full).'); }
+  };
+  $('cvRemove').onclick = async () => { await chrome.storage.local.remove('cv_' + pid); say('CV removed'); show(); };
+})();

@@ -91,6 +91,36 @@
     setTimeout(() => { el.style.boxShadow = prev; }, 1800);
   }
 
+  // ---- CV / resume upload ----
+  const CV_RE = /resume|\bcv\b|curriculum|السيرة الذاتية|سيرة ذاتية|السيره الذاتيه/;
+  const NOT_CV_RE = /cover|letter|photo|picture|avatar|portrait|headshot|transcript|certificate|صورة|رسالة|خطاب/;
+
+  function acceptsFile(el, file) {
+    const acc = (el.getAttribute('accept') || '').toLowerCase().split(',').map((t) => t.trim()).filter(Boolean);
+    if (!acc.length) return true;
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+    return acc.some((t) => t === ext || t === file.type.toLowerCase() || (t.endsWith('/*') && file.type.toLowerCase().startsWith(t.slice(0, -1))));
+  }
+
+  function attachCv(el, cv, overwrite) {
+    if (!cv || !cv.b64 || el.disabled) return false;
+    if (el.files && el.files.length && !overwrite) return false;
+    const near = el.parentElement && el.parentElement.textContent.length < 80 ? norm(el.parentElement.textContent) : '';
+    const sig = signature(el) + ' ' + near;
+    if (!CV_RE.test(sig) || (NOT_CV_RE.test(sig) && !CV_RE.test(signature(el)))) return false;
+    const bin = atob(cv.b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const file = new File([bytes], cv.name, { type: cv.type || 'application/octet-stream' });
+    if (!acceptsFile(el, file)) return false;
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    el.files = dt.files;
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  }
+
   // ---- fill report: required fields that are still empty ----
   const MARK_ATTR = 'data-formfill-marker';
 
@@ -152,7 +182,7 @@
     return missing;
   }
 
-  function fill(profile, settings) {
+  function fill(profile, settings, cv) {
     settings = settings || {};
     const p = Object.assign({}, profile.data || {});
     if (!p.fullName) p.fullName = [p.firstName, p.lastName].filter(Boolean).join(' ');
@@ -161,6 +191,10 @@
     const seenGroups = new Set();
     for (const el of deepQuery(document, 'input, textarea, select')) {
       const type = (el.type || '').toLowerCase();
+      if (type === 'file') {
+        if (visible(el) && attachCv(el, cv, settings.overwrite)) { flash(el); done.push('Resume / CV'); }
+        continue;
+      }
       if (SKIP_TYPES.has(type) || el.disabled || el.readOnly || !visible(el)) continue;
       const isChoice = type === 'radio' || type === 'checkbox';
       if (!isChoice && el.value && !settings.overwrite && el.tagName !== 'SELECT') continue;

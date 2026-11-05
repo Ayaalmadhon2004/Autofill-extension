@@ -25,5 +25,5 @@ async function fillActiveTab(overwriteOverride) {
     target, args: [profile, settings], func: (p, s) => window.__formFill.fill(p, s)
   });
   const all = results.map((r) => r.result).filter(Boolean);
-  return { filled: all.reduce((n, r) => n + r.filled, 0), fields: all.flatMap((r) => r.fields) };
+  return { filled: all.reduce((n, r) => n + r.filled, 0), fields: all.flatMap((r) => r.fields), missing: all.flatMap((r) => r.missing || []) };
 }

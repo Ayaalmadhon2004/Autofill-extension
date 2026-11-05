@@ -8,12 +8,26 @@
   select{width:100%;min-height:44px;font:inherit;padding:0 8px;margin-bottom:10px;border:1px solid #6b7080;border-radius:6px}
   #status{margin:10px 0 0;min-height:20px} .err{color:#b3261e} .ok{color:#17663a}
   a{color:#1a56db}
+  /* lock screen (popup-security.js) */
+  #unlock input{display:block;width:100%;box-sizing:border-box;min-height:44px;font:inherit;padding:0 8px;margin:4px 0 10px;border:1px solid #6b7080;border-radius:6px}
+  #unlock p{margin:0 0 10px}
+  #lockLink{background:none;border:0;color:#1a56db;text-decoration:underline;width:auto;min-height:44px;font-size:14px;font-weight:400;padding:0}
 </style></head><body>
+<form id="unlock" hidden>
+  <p><strong>Profiles are locked</strong></p>
+  <label for="pass" style="display:block;margin:0">Passphrase</label>
+  <input type="password" id="pass" autocomplete="current-password" required>
+  <button type="submit">Unlock</button>
+  <p id="unlockErr" class="err" role="alert"></p>
+</form>
+<div id="main">
 <label for="profile">Profile</label>
 <select id="profile"></select>
 <button id="fill" type="button">Fill this page</button>
 <label><input type="checkbox" id="overwrite"> Overwrite fields that already have text</label>
 <p id="status" role="status"></p>
+</div>
 <a href="#" id="opts">Edit my profile</a> · Shortcut: Ctrl+Shift+F
-<script src="runner.js"></script><script src="popup.js"></script>
+<button type="button" id="lockLink" hidden>Lock now</button>
+<script src="security.js"></script><script src="runner.js"></script><script src="popup-security.js"></script><script src="popup.js"></script>
 </body></html>

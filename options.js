@@ -56,9 +56,11 @@ function showProfile() {
 function switchTo(id) { syncCurrent(); state.activeId = id; showProfile(); }
 
 (async () => {
-  const s = await loadState();
+  let s;
+  try { s = await loadState(); } catch (e) { if (e.code === 'LOCKED') { showOptionsUnlock(); return; } throw e; }
   state = { profiles: s.profiles, activeId: s.activeId };
   showProfile();
+  initSecurityOptions();
   $('psel').onchange = (e) => switchTo(e.target.value);
   $('pnew').onclick = () => {
     syncCurrent();

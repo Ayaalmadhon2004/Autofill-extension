@@ -17,6 +17,8 @@ function boot({ local, url = 'https://example.com/apply' }) {
   });
   Object.assign(ctx.chrome, {
     commands: { onCommand: { addListener: (f) => { handler = f; } } },
+    runtime: { onInstalled: { addListener() {} }, onMessage: { addListener() {} }, getURL: (x) => x },
+    contextMenus: { create() {}, onClicked: { addListener() {} } },
     action: {
       setBadgeText: ({ text }) => badge.text.push(text), setBadgeBackgroundColor: ({ color }) => badge.color.push(color), setTitle: ({ title }) => badge.title.push(title)
     }

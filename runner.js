@@ -59,7 +59,7 @@ async function fillActiveTab(overwriteOverride) {
   const cvKey = 'cv_' + profile.id; // CV file stored per profile by options.js (Documents section)
   const cv = (await chrome.storage.local.get(cvKey))[cvKey] || null;
   const target = { tabId: tab.id, allFrames: true };
-  await chrome.scripting.executeScript({ target, files: ['fields.js', 'groups.js', 'filler.js'] });
+  await chrome.scripting.executeScript({ target, files: ['fields.js', 'questions.js', 'groups.js', 'signature.js', 'filler.js'] });
   const results = await chrome.scripting.executeScript({
     target, args: [profile, settings, cv], func: (p, s, c) => window.__formFill.fill(p, s, c)
   });

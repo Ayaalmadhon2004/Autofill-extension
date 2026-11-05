@@ -5,7 +5,7 @@
   const FIELDS = window.FORMFILL_FIELDS;
   const SKIP_TYPES = new Set(['hidden', 'submit', 'button', 'file', 'password', 'image', 'reset']);
 
-  const { norm, labelText, signature } = window.FORMFILL_SIG; // shared with teach.js, see signature.js
+  const { norm, labelText, signature, hasWord, yesNo } = window.FORMFILL_SIG; // shared with teach.js, see signature.js
 
   function visible(el) { return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); }
 
@@ -31,10 +31,20 @@
     el.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
-  function setSelect(el, value) {
+  function pickOption(opts, value) { // yes/no answers match by meaning (English/Arabic), others by text
+    const yn = yesNo(value);
+    if (yn) {
+      const hit = opts.find((o) => (yesNo(o.text) || (/^(y|n|yes|no|true|false)$/i.test(o.value) ? yesNo(o.value) : null)) === yn);
+      if (hit) return hit;
+      if (opts.some((o) => yesNo(o.text))) return null;
+    }
     const v = norm(value);
+    return opts.find((o) => norm(o.text) === v || norm(o.value) === v) || opts.find((o) => v && hasWord(o.text, v));
+  }
+
+  function setSelect(el, value) {
     const opts = [...el.options].filter((o) => o.value !== '' || o.text.trim() !== '');
-    const hit = opts.find((o) => norm(o.text) === v || norm(o.value) === v) || opts.find((o) => v && (norm(o.text).includes(v) || v.includes(norm(o.text)) && norm(o.text).length > 2));
+    const hit = pickOption(opts, value);
     if (!hit) return false;
     el.value = hit.value;
     el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -43,15 +53,17 @@
   }
 
   function setChoice(el, value) { // radio / checkbox
-    const v = norm(value);
-    if (el.type === 'checkbox') {
-      const want = ['yes', 'true', 'checked', '1'].includes(v);
-      if (el.checked !== want) el.click();
-      return true;
-    }
-    const lab = norm(labelText(el) || el.value);
-    if (lab === v || lab.includes(v)) { if (!el.checked) el.click(); return true; }
-    return false;
+    const v = norm(value), yn = yesNo(value);
+    const text = labelText(el).replace(/\s+/g, ' ').trim() || el.value;
+    const own = yesNo(text) || (/^(y|n|yes|no|true|false)$/i.test(el.value) ? yesNo(el.value) : null);
+    let want; // should this control end up selected?
+    if (yn && own) want = own === yn;
+    else if (el.type === 'checkbox') want = yn ? yn === 'yes' : (['true', 'checked', '1'].includes(v) || hasWord(text, v));
+    else want = norm(text) === v || hasWord(text, v);
+    if (el.type === 'checkbox') { if (el.checked !== want) el.click(); return true; }
+    if (!want) return false;
+    if (!el.checked) el.click();
+    return true;
   }
 
   function flash(el) {

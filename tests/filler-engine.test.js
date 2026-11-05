@@ -12,6 +12,7 @@ const ok = (c, m) => { assert.ok(c, m); pass++; console.log('PASS', m); };
 async function load(page, html, filerSrc) {
   await page.setContent(html);
   await page.evaluate(() => { delete window.__formFill; });
+  await page.addScriptTag({ path: path.join(root, 'i18n.js') });
   await page.addScriptTag({ path: path.join(root, 'fields.js') });
   if (!filerSrc) { await page.addScriptTag({ path: path.join(root, 'questions.js') }); await page.addScriptTag({ path: path.join(root, 'signature.js') }); }
   if (filerSrc) await page.addScriptTag({ content: filerSrc }); else await page.addScriptTag({ path: path.join(root, 'filler.js') });
@@ -52,7 +53,7 @@ const run = (page, withCv) => page.evaluate(([p, c]) => window.__formFill.fill(p
   await load(page, `<iframe id=fr srcdoc="<label>Email <input id=x></label>"></iframe>`);
   await page.waitForSelector('#fr');
   const frame = page.frames().find((f) => f !== page.mainFrame());
-  for (const f of ['fields.js', 'questions.js', 'signature.js', 'filler.js']) await frame.addScriptTag({ path: path.join(root, f) });
+  for (const f of ['i18n.js', 'fields.js', 'questions.js', 'signature.js', 'filler.js']) await frame.addScriptTag({ path: path.join(root, f) });
   const fr = await frame.evaluate((p) => window.__formFill.fill(p, {}), profile);
   ok(fr.filled === 1 && await frame.$eval('#x', (e) => e.value) === 'aya@example.com', 'iframe filled by per-frame injection');
 

@@ -153,7 +153,7 @@ async function newPage(browser, w, state) {
       await page.addInitScript(mock);
       await page.route('https://jobs.example.com/**', (r) => r.fulfill({ contentType: 'text/html; charset=utf-8', body: `<html dir="${lang === 'ar' ? 'rtl' : 'ltr'}"><head><title>Apply ${lang}</title></head><body>${formHtml(lang === 'ar')}</body></html>` }));
       await page.goto('https://jobs.example.com/apply?utm=1#x');
-      for (const f of ['fields.js', 'questions.js', 'signature.js', 'filler.js']) await page.addScriptTag({ path: path.join(root, f) });
+      for (const f of ['i18n.js', 'fields.js', 'questions.js', 'signature.js', 'filler.js']) await page.addScriptTag({ path: path.join(root, f) });
       await page.addScriptTag({ path: path.join(root, 'security.js') });
       await page.addScriptTag({ path: path.join(root, 'runner.js') });
       const r = await page.evaluate(async () => {

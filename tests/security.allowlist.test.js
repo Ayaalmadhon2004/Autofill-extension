@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const { loadExtension } = require('./helpers/load.js');
 
-const ctx = loadExtension(['security.js', 'runner.js'], {});
+const ctx = loadExtension(['i18n.js', 'security.js', 'runner.js'], {});
 const S = ctx.FormFillSecurity;
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('ok -', name); };
 
@@ -42,7 +42,7 @@ let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('ok -', 
   const profiles = [{ id: 'default', name: 'English', data: { firstName: 'Aya' }, custom: [] }];
   const run = (settings, url) => {
     const executed = [];
-    const c = loadExtension(['security.js', 'runner.js'], {
+    const c = loadExtension(['i18n.js', 'security.js', 'runner.js'], {
       local: { profiles, settings },
       tabs: { query: async () => [{ id: 1, url }] },
       scripting: { executeScript: async (o) => { executed.push(o); return o.files ? [] : [{ result: { filled: 1, fields: ['x'] } }]; } }

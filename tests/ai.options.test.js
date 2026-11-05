@@ -92,7 +92,7 @@ const profile = { id: 'default', name: 'English', data: { firstName: 'Aya' }, cu
 
   // ---- background wiring (vm) ---------------------------------------------------------------------------
   const ev = { menus: [], clicks: [], msg: [], installed: [], scripts: [], fetches: 0 };
-  const t = loadExtension(['security.js', 'signature.js', 'runner.js', 'ai.js'], {
+  const t = loadExtension(['i18n.js', 'security.js', 'signature.js', 'runner.js', 'ai.js'], {
     local: { profiles: [profile], activeId: 'default', aiSettings: { enabled: true, consent: true, model: 'claude-haiku-5-5', include: { summary: true } }, aiKey: { plain: KEY } },
     tabs: { query: async () => [{ id: 3, url: 'https://example.com/apply' }] },
     scripting: { executeScript: async (o) => { ev.scripts.push(o); return o.files ? [] : [{ result: true }]; } }
@@ -109,7 +109,7 @@ const profile = { id: 'default', name: 'English', data: { firstName: 'Aya' }, cu
   const ai = ev.menus.find((m) => m.id === 'formfill-ai-suggest');
   check('context menu item "Suggest an answer with AI…" for editable fields (the Teach item is untouched)', ai && ai.title === 'Suggest an answer with AI…' && ai.contexts.join() === 'editable' && ev.menus.some((m) => m.id === 'formfill-teach'), ev.menus);
   await Promise.all(ev.clicks.map((f) => f({ menuItemId: 'formfill-ai-suggest', frameId: 2 }, { id: 3, url: 'https://example.com/apply' })));
-  check('menu click injects the prompt script into the clicked frame only; sends nothing itself', ev.scripts[0].files.join() === 'signature.js,ai-suggest.js' && ev.scripts[0].target.frameIds[0] === 2 && ev.fetches === 0, ev.scripts[0]);
+  check('menu click injects the prompt script into the clicked frame only; sends nothing itself', ev.scripts[0].files.join() === 'i18n.js,signature.js,ai-suggest.js' && ev.scripts[0].target.frameIds[0] === 2 && ev.fetches === 0, ev.scripts[0]);
   const call = (m, sender) => new Promise((res) => { let used = false; for (const f of ev.msg) { if (f(m, sender, res)) used = true; } if (!used) res('IGNORED'); });
   check('a draft request from a web page tab is served', (await call({ type: 'formfill-ai-draft', question: 'Why us?', page: {} }, { id: 'me', tab: { id: 3 } })).ok === true && ev.fetches === 1);
   check('draft request from an extension page (no tab) is ignored', (await call({ type: 'formfill-ai-draft', question: 'Why us?' }, { id: 'me' })) === 'IGNORED' && ev.fetches === 1);

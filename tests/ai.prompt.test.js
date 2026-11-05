@@ -12,7 +12,7 @@ const { launch, inject, check, done } = require('./teaching.helpers');
     window.chrome = { runtime: { lastError: null, sendMessage: (m, cb) => { window.__sent.push(m); setTimeout(() => cb(window.__reply), window.__delay); } } };
     document.getElementById('w').addEventListener('change', () => window.__changes++);
   });
-  await inject(page, ['signature.js', 'ai-suggest.js']);
+  await inject(page, ['i18n.js', 'signature.js', 'ai-suggest.js']);
   const shadow = (fn, arg) => page.evaluate(([f, a]) => { const host = document.querySelector('[data-formfill-ai]'); return new Function('root', 'a', 'return (' + f + ')(root,a)')(host && host.shadowRoot, a); }, [fn.toString(), arg]);
   const startAuto = () => page.evaluate(() => window.__formFillAI.start());
   const sentCount = () => page.evaluate(() => window.__sent.length);

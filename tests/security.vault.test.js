@@ -9,7 +9,7 @@ const t = async (name, fn) => { await fn(); n++; console.log('ok -', name); };
 const rejects = async (p, code) => { try { await p; } catch (e) { assert.equal(e.code, code, e.message); return; } assert.fail('expected rejection ' + code); };
 
 (async () => {
-  const mk = (local) => loadExtension(['security.js', 'runner.js'], { local });
+  const mk = (local) => loadExtension(['i18n.js', 'security.js', 'runner.js'], { local });
   const S = (ctx) => ctx.FormFillSecurity;
 
   await t('iteration count is at least 310000', () => { assert.ok(S(mk()).ITER >= 310000); assert.ok(S(mk()).MIN_ITER >= 310000); });

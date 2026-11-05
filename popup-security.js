@@ -45,3 +45,22 @@ async function initAllowlist(settings) { // tell the user up front when this sit
   $('status').className = 'err'; $('status').textContent = '\u26A0 ' + FormFillSecurity.siteRefusal(site.host);
   offerAllow(site.host);
 }
+
+// ---- Backup reminder ---------------------------------------------------------------------------------------
+async function initBackupBanner(profiles, activeId) {
+  const r = await FormFillSecurity.backupReminder(profiles);
+  if (!r.due) return;
+  const box = $('backup'), encrypted = await FormFillSecurity.isEnabled();
+  box.textContent = ''; box.hidden = false;
+  const h = document.createElement('p'); h.innerHTML = '<strong></strong>'; h.firstChild.textContent = 'Back up your profiles';
+  const msg = document.createElement('p');
+  msg.textContent = (r.days ? 'Last backup: ' + r.days + ' days ago. ' : '') + (encrypted ? '\uD83D\uDD12 The file will be encrypted with your passphrase.' : '\u26A0 The file will contain your details as plain text. Set a passphrase in Options to encrypt it.');
+  const go = document.createElement('button'); go.type = 'button'; go.textContent = 'Download backup';
+  const later = document.createElement('button'); later.type = 'button'; later.className = 'later'; later.textContent = 'Remind me tomorrow';
+  box.append(h, msg, go, later);
+  go.onclick = async () => {
+    try { await FormFillSecurity.downloadBackup(profiles, activeId); box.textContent = '\u2713 Backup downloaded.'; setTimeout(() => { box.hidden = true; }, 2500); }
+    catch (x) { msg.textContent = '\u26A0 ' + x.message; }
+  };
+  later.onclick = async () => { await FormFillSecurity.backupSnooze(); box.hidden = true; };
+}

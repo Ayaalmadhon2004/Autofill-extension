@@ -5,6 +5,7 @@ const $ = (id) => document.getElementById(id);
   const { settings, profiles, activeId } = st;
   initLockLink();
   initAllowlist(settings);
+  initBackupBanner(profiles, activeId);
   const sel = $('profile');
   for (const p of profiles) sel.add(new Option(p.name, p.id, false, p.id === activeId));
   sel.onchange = () => saveState({ profiles, activeId: sel.value });

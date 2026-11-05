@@ -12,6 +12,9 @@
   #unlock input{display:block;width:100%;box-sizing:border-box;min-height:44px;font:inherit;padding:0 8px;margin:4px 0 10px;border:1px solid #6b7080;border-radius:6px}
   #unlock p{margin:0 0 10px}
   #allowSite{background:#fff;color:#1a56db;border:1px solid #1a56db;margin-top:10px}
+  #backup{border:1px solid #f5a623;background:#fff8e6;border-radius:8px;padding:10px;margin-bottom:12px}
+  #backup p{margin:0 0 8px} #backup button{margin-top:6px}
+  #backup .later{background:#fff;color:#1a56db;border:1px solid #1a56db}
   #lockLink{background:none;border:0;color:#1a56db;text-decoration:underline;width:auto;min-height:44px;font-size:14px;font-weight:400;padding:0}
 </style></head><body>
 <form id="unlock" hidden>
@@ -22,6 +25,7 @@
   <p id="unlockErr" class="err" role="alert"></p>
 </form>
 <div id="main">
+<div id="backup" role="region" aria-label="Backup reminder" hidden></div>
 <label for="profile">Profile</label>
 <select id="profile"></select>
 <button id="fill" type="button">Fill this page</button>

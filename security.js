@@ -3,6 +3,7 @@
 //    The derived key is kept only in chrome.storage.session (cleared when the browser closes).
 //    There is NO recovery: a forgotten passphrase means the encrypted data cannot be read.
 //  - Site allowlist: optional "only fill on these sites" setting, matched on the tab's hostname.
+//  - Backup: one JSON file with ALL profiles, encrypted when a passphrase is set; merge-import; periodic reminder.
 // Nothing here sends data anywhere.
 (function (root) {
   const ITER = 600000; // PBKDF2-SHA256 iterations for new vaults (never below 310000)
@@ -112,7 +113,10 @@
   }
 
   // ---- settings (plain text; nothing secret) ---------------------------------------------------------------
-  const DEFAULT_SETTINGS = { overwrite: false, allowlistEnabled: false, allowedSites: [] };
+  const DEFAULT_SETTINGS = {
+    overwrite: false, allowlistEnabled: false, allowedSites: [],
+    backupEveryDays: 14, lastBackupAt: null, backupBaselineAt: null, backupSnoozeUntil: 0
+  };
   async function updateSettings(fn) { // read-modify-write so independent features never clobber each other's keys
     const cur = Object.assign({}, DEFAULT_SETTINGS, (await chrome.storage.local.get({ settings: null })).settings);
     const next = fn(cur) || cur;
@@ -156,7 +160,94 @@
     return updateSettings((s) => { if (!s.allowedSites.some((x) => normalizePattern(x) === p)) s.allowedSites = [...s.allowedSites, p]; return s; });
   }
 
+  // ---- backup ---------------------------------------------------------------------------------------------------
+  const DAY = 86400000;
+  const BACKUP_APP = 'one-click-form-filler';
+  const hasData = (p) => !!(p && ((p.data && Object.keys(p.data).length) || (p.custom && p.custom.length) || (p.experience && p.experience.length) || (p.education && p.education.length)));
+
+  // Build the backup object for all profiles. Encrypted with the vault key when a passphrase is set
+  // (same salt/iterations, fresh IV, so the same passphrase opens it); otherwise plain text.
+  async function buildBackup(profiles, activeId, now) {
+    const head = { app: BACKUP_APP, kind: 'backup', version: 1, exportedAt: new Date(now || Date.now()).toISOString() };
+    const payload = { profiles, activeId };
+    const vault = await getVault();
+    if (!vault) return { file: Object.assign(head, { encrypted: false }, payload), encrypted: false };
+    const key = await sessionKey();
+    if (!key) throw err('LOCKED', 'Profiles are locked. Enter your passphrase.');
+    return { file: Object.assign(head, { encrypted: true }, await sealWithKey(key, vault, payload)), encrypted: true };
+  }
+
+  const safeKey = (k) => k !== '__proto__' && k !== 'constructor' && k !== 'prototype';
+  function cleanProfile(p, i) {
+    if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
+    const data = {};
+    for (const [k, v] of Object.entries(p.data && typeof p.data === 'object' ? p.data : {})) if (safeKey(k) && ['string', 'number'].includes(typeof v)) data[k] = String(v);
+    const rows = (a) => (Array.isArray(a) ? a : []).filter((e) => e && typeof e === 'object').map((e) => {
+      const o = {}; for (const [k, v] of Object.entries(e)) if (safeKey(k) && ['string', 'number'].includes(typeof v)) o[k] = String(v); return o;
+    });
+    const custom = (Array.isArray(p.custom) ? p.custom : []).filter((r) => r && typeof r.match === 'string' && typeof r.value === 'string').map((r) => ({ match: r.match, value: r.value }));
+    return { id: typeof p.id === 'string' && p.id ? p.id : 'imp' + Date.now() + '-' + i, name: typeof p.name === 'string' && p.name.trim() ? p.name.trim() : 'Imported',
+      data, custom, experience: rows(p.experience), education: rows(p.education) };
+  }
+  // Accepts a backup file (plain or encrypted) or a single exported profile. Returns clean profiles.
+  async function parseBackup(text, passphrase) {
+    let obj;
+    try { obj = JSON.parse(text); } catch { throw err('BAD_FILE', 'This is not a JSON file.'); }
+    if (!obj || typeof obj !== 'object') throw err('BAD_FILE', 'This is not a backup file.');
+    if (obj.app === BACKUP_APP && obj.kind === 'backup' && obj.encrypted) {
+      if (!passphrase) throw err('NEED_PASSPHRASE', 'This backup is encrypted. Enter its passphrase first.');
+      obj = (await openEnvelope(passphrase, obj)).data;
+    }
+    const list = Array.isArray(obj.profiles) ? obj.profiles : obj.data && typeof obj.data === 'object' ? [obj] : null;
+    if (!list) throw err('BAD_FILE', 'No profiles found in this file.');
+    const profiles = list.map(cleanProfile).filter(Boolean);
+    if (!profiles.length) throw err('BAD_FILE', 'No profiles found in this file.');
+    return profiles;
+  }
+  // Merge incoming into existing without losing or overwriting anything.
+  function mergeProfiles(existing, incoming) {
+    const out = existing.slice(), ids = new Set(existing.map((p) => p.id));
+    const body = (p) => JSON.stringify([p.name, p.data, p.custom || [], p.experience || [], p.education || []]);
+    let added = 0, skipped = 0;
+    incoming.forEach((p, i) => {
+      if (out.some((e) => body(e) === body(p))) { skipped++; return; } // already here
+      let q = p;
+      if (ids.has(p.id)) q = Object.assign({}, p, { id: 'imp' + Date.now() + '-' + i, name: p.name + ' (imported)' });
+      ids.add(q.id); out.push(q); added++;
+    });
+    return { profiles: out, added, skipped };
+  }
+
+  // Reminder: due every `backupEveryDays` (0 = never) once there is something worth saving.
+  // The clock starts the first time this runs, so a new install is not nagged at once.
+  async function backupReminder(profiles, now) {
+    now = now || Date.now();
+    let s = Object.assign({}, DEFAULT_SETTINGS, (await chrome.storage.local.get({ settings: null })).settings);
+    if (s.backupBaselineAt == null) s = await updateSettings((x) => { x.backupBaselineAt = now; return x; });
+    const days = Number(s.backupEveryDays);
+    if (!(days > 0) || !profiles.some(hasData) || now < (s.backupSnoozeUntil || 0)) return { due: false };
+    const since = now - (s.lastBackupAt != null ? s.lastBackupAt : s.backupBaselineAt);
+    return { due: since >= days * DAY, days: Math.floor(since / DAY) };
+  }
+  const backupDone = (now) => updateSettings((s) => { s.lastBackupAt = now || Date.now(); s.backupSnoozeUntil = 0; return s; });
+  const backupSnooze = (now) => updateSettings((s) => { s.backupSnoozeUntil = (now || Date.now()) + DAY; return s; });
+
+  // Download from an extension page with <a download> (no `downloads` permission needed).
+  function downloadJson(obj, filename) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' }));
+    a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  }
+  async function downloadBackup(profiles, activeId) { // returns { encrypted }
+    const { file, encrypted } = await buildBackup(profiles, activeId);
+    downloadJson(file, 'form-filler-backup-' + file.exportedAt.slice(0, 10) + (encrypted ? '-encrypted' : '') + '.json');
+    await backupDone();
+    return { encrypted };
+  }
+
   const api = {
+    buildBackup, parseBackup, mergeProfiles, backupReminder, backupDone, backupSnooze, downloadBackup, hasData,
     DEFAULT_SETTINGS, updateSettings, normalizePattern, hostMatches, checkSite, siteRefusal, allowHost,
     ITER, MIN_ITER, MIN_PASSPHRASE,
     deriveKey, createEnvelope, openEnvelope, sealWithKey, encryptWith, decryptWith,

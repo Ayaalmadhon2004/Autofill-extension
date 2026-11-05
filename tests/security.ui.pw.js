@@ -107,6 +107,64 @@ let n = 0; const ok = (m) => { n++; console.log('ok -', m); };
     await ctx.close();
   }
 
+
+  // ---- backup: banner, download, import ------------------------------------------------------------------------
+  {
+    const fs = require('node:fs');
+    const full = { id: 'default', name: 'English', data: { firstName: 'Aya' }, custom: [], experience: [{ company: 'Acme' }], education: [] };
+    const arabic = { id: 'ar', name: 'Arabic', data: { firstName: 'آية' }, custom: [], experience: [], education: [] };
+    const old = Date.now() - 20 * 86400000;
+    const ctx = await browser.newContext({ acceptDownloads: true }); const page = await ctx.newPage();
+    const h = await installChrome(ctx, { local: { profiles: [full, arabic], activeId: 'default', settings: { overwrite: false, backupBaselineAt: old } } });
+    const popup = await ctx.newPage(); await popup.goto(h.url('popup.html'));
+    await popup.waitForSelector('#backup:not([hidden])');
+    assert.match(await popup.textContent('#backup'), /Back up your profiles[\s\S]*plain text/); ok('popup shows the reminder banner after 14 days, warning about plain text');
+    const [dl] = await Promise.all([popup.waitForEvent('download'), popup.click('#backup >> text=Download backup')]);
+    const file = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
+    assert.equal(file.profiles.length, 2); assert.equal(file.encrypted, false); assert.match(dl.suggestedFilename(), /^form-filler-backup-\d{4}-\d{2}-\d{2}\.json$/);
+    ok('popup download contains ALL profiles (no downloads permission: plain <a download>)');
+    await popup.waitForFunction(() => document.getElementById('backup').hidden);
+    assert.ok(h.stores.local.settings.lastBackupAt > Date.now() - 60000); ok('lastBackupAt recorded, banner goes away');
+    await popup.reload(); assert.equal(await popup.isVisible('#backup'), false); ok('no banner right after a backup');
+
+    // options: panel + import merge
+    await page.goto(h.url('options.html'));
+    assert.equal(await page.isVisible('#backup-banner'), false);
+    assert.match(await page.textContent('#backup-note'), /plain text/); ok('options panel warns the backup is plain text without a passphrase');
+    const extra = { id: 'x', name: 'Work', data: { firstName: 'W' }, custom: [], experience: [], education: [] };
+    const tmp = require('node:os').tmpdir() + '/ff-import-' + process.pid + '.json';
+    fs.writeFileSync(tmp, JSON.stringify({ app: 'one-click-form-filler', kind: 'backup', version: 1, encrypted: false, profiles: [full, extra] }));
+    await page.setInputFiles('#backup-file', tmp);
+    await page.waitForSelector('#sec-backup .sec-msg:has-text("Merged 1 new profile, 1 already present")');
+    assert.deepEqual(h.stores.local.profiles.map((p) => p.id), ['default', 'ar', 'x']); ok('import merges all profiles, skips duplicates, saves');
+
+    // encrypted flow
+    await page.fill('#pp-new', 'backup-passphrase'); await page.fill('#pp-new2', 'backup-passphrase');
+    await page.click('text=Turn on passphrase lock');
+    await page.waitForSelector('#backup-note:has-text("encrypted with your passphrase")'); ok('backup note updates when a passphrase is set');
+    const [dl2] = await Promise.all([page.waitForEvent('download'), page.click('text=Download backup of all profiles')]);
+    const enc = fs.readFileSync(await dl2.path(), 'utf8');
+    assert.ok(JSON.parse(enc).encrypted === true && !enc.includes('Acme') && !enc.includes('Aya')); assert.match(dl2.suggestedFilename(), /-encrypted\.json$/);
+    ok('encrypted backup when a passphrase is set (no plain text in the file)');
+    fs.writeFileSync(tmp, enc);
+    await page.setInputFiles('#backup-file', tmp);
+    await page.waitForSelector('#sec-backup .sec-msg:has-text("encrypted. Enter its passphrase")'); ok('encrypted import asks for the file passphrase');
+    await page.fill('#backup-filepass', 'backup-passphrase'); await page.setInputFiles('#backup-file', tmp);
+    await page.waitForSelector('#sec-backup .sec-msg:has-text("Merged 0 new profiles, 3 already present")'); ok('encrypted import round trip');
+    fs.unlinkSync(tmp);
+    await ctx.close();
+  }
+  {
+    const ctx = await browser.newContext(); const page = await ctx.newPage();
+    const h = await installChrome(ctx, { local: { profiles: [{ ...profile, data: { firstName: 'Aya' } }], activeId: 'default', settings: { overwrite: false, backupBaselineAt: Date.now() - 30 * 86400000 } } });
+    await page.goto(h.url('options.html'));
+    await page.waitForSelector('#backup-banner');
+    assert.match(await page.textContent('#backup-banner'), /Back up your profiles/); ok('options shows the banner when a backup is due');
+    await page.click('#backup-banner >> text=Remind me tomorrow');
+    assert.ok(h.stores.local.settings.backupSnoozeUntil > Date.now()); ok('snooze works');
+    await ctx.close();
+  }
+
   await browser.close();
   console.log(`\n${n} checks passed`);
 })().catch((e) => { console.error(e); process.exit(1); });

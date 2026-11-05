@@ -7,7 +7,7 @@
   legend{font-weight:700;padding:0 6px}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
   label{display:block;font-weight:600;font-size:13px}
-  input,textarea{display:block;width:100%;box-sizing:border-box;min-height:44px;padding:8px 10px;margin-top:4px;font:inherit;border:1px solid #6b7080;border-radius:6px}
+  input,textarea,select{display:block;width:100%;box-sizing:border-box;min-height:44px;padding:8px 10px;margin-top:4px;font:inherit;border:1px solid #6b7080;border-radius:6px}
   textarea{min-height:100px}
   button{min-height:44px;padding:0 18px;font:inherit;font-weight:600;border:0;border-radius:8px;background:#1a56db;color:#fff;cursor:pointer}
   button.sec{background:#fff;color:#1a56db;border:1px solid #1a56db}
@@ -18,6 +18,17 @@
 </style></head><body>
 <h1>My profile</h1>
 <p>Everything is saved only in this browser. Leave a field empty to skip it.</p>
+<fieldset><legend>Profiles</legend>
+  <div class="grid">
+    <label>Editing profile <select id="psel"></select></label>
+    <label>Profile name <input id="pname" dir="auto"></label>
+  </div>
+  <p style="margin:12px 0 0;display:flex;gap:8px;flex-wrap:wrap">
+    <button type="button" class="sec" id="pnew">New empty profile</button>
+    <button type="button" class="sec" id="pdup">Duplicate (e.g. English → Arabic)</button>
+    <button type="button" class="sec" id="pdel">Delete</button>
+  </p>
+</fieldset>
 <form id="form"></form>
 <fieldset><legend>Custom rules</legend>
   <p>Teach it a question: if a field's label contains the text on the left, it gets the value on the right (e.g. <em>work authorization</em> → <em>Yes</em>; for radio buttons the value is the answer's text).</p>

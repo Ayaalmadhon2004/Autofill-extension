@@ -94,95 +94,47 @@
     setTimeout(() => { el.style.boxShadow = prev; }, 1800);
   }
 
-  // ---- CV / resume upload ----
-  const CV_RE = /resume|\bcv\b|curriculum|السيرة الذاتية|سيرة ذاتية|السيره الذاتيه/;
-  const NOT_CV_RE = /cover|letter|photo|picture|avatar|portrait|headshot|transcript|certificate|صورة|رسالة|خطاب/;
+  // --- Repeating sections (work experience / education) -------------------------------------------
+  const ENTRY_TYPES = new Set(['', 'text', 'search', 'date', 'month', 'number']);
+  const BOX_HINT = /experience|education|employment|work-?history|\bjob|school|repeat|entry/i;
+  const boxIds = new WeakMap();
+  let boxSeq = 0;
 
-  function acceptsFile(el, file) {
-    const acc = (el.getAttribute('accept') || '').toLowerCase().split(',').map((t) => t.trim()).filter(Boolean);
-    if (!acc.length) return true;
-    const ext = '.' + file.name.split('.').pop().toLowerCase();
-    return acc.some((t) => t === ext || t === file.type.toLowerCase() || (t.endsWith('/*') && file.type.toLowerCase().startsWith(t.slice(0, -1))));
-  }
-
-  function attachCv(el, cv, overwrite) {
-    if (!cv || !cv.b64 || el.disabled) return false;
-    if (el.files && el.files.length && !overwrite) return false;
-    const near = el.parentElement && el.parentElement.textContent.length < 80 ? norm(el.parentElement.textContent) : '';
-    const sig = signature(el) + ' ' + near;
-    if (!CV_RE.test(sig) || (NOT_CV_RE.test(sig) && !CV_RE.test(signature(el)))) return false;
-    const bin = atob(cv.b64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    const file = new File([bytes], cv.name, { type: cv.type || 'application/octet-stream' });
-    if (!acceptsFile(el, file)) return false;
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    el.files = dt.files;
-    el.dispatchEvent(new Event('input', { bubbles: true }));
-    el.dispatchEvent(new Event('change', { bubbles: true }));
-    return true;
-  }
-
-  // ---- fill report: required fields that are still empty ----
-  const MARK_ATTR = 'data-formfill-marker';
-
-  function isRequired(el) {
-    if (el.required || el.getAttribute('aria-required') === 'true') return true;
-    return /\*/.test(labelText(el) + ' ' + groupQuestion(el));
-  }
-
-  function isEmpty(el) {
-    const type = (el.type || '').toLowerCase();
-    if (type === 'checkbox') return !el.checked;
-    if (type === 'radio') {
-      const group = el.name ? deepQuery(el.getRootNode(), 'input[type=radio]').filter((r) => r.name === el.name && r.form === el.form) : [el];
-      return !group.some((r) => r.checked);
+  function boxOf(el) { // nearest repeated-block container: fieldset, role=group, or a wrapper that names itself
+    for (let n = el.parentElement, depth = 0; n && depth < 8; n = n.parentElement, depth++) {
+      if (n === document.body || n.tagName === 'FORM') return null;
+      if (n.tagName === 'FIELDSET' || n.getAttribute('role') === 'group' || BOX_HINT.test(n.className + ' ' + n.id)) {
+        if (!boxIds.has(n)) boxIds.set(n, 'b' + (boxSeq++));
+        return boxIds.get(n);
+      }
     }
-    if (type === 'file') return !(el.files && el.files.length);
-    return !String(el.value || '').trim();
+    return null;
   }
 
-  function fieldName(el) {
-    let t = groupQuestion(el).trim() || labelText(el).trim() || el.getAttribute('aria-label') || el.placeholder || el.name || el.id || el.type;
-    return String(t).replace(/\*/g, '').replace(/\s+/g, ' ').trim().slice(0, 80);
-  }
-
-  function clearMarkers() {
-    for (const m of deepQuery(document, '[' + MARK_ATTR + ']')) {
-      if (m.tagName === 'SPAN') m.remove(); else { m.style.outline = m.__ffPrevOutline || ''; m.style.outlineOffset = ''; m.removeAttribute(MARK_ATTR); }
-    }
-  }
-
-  function markMissing(el) {
-    el.setAttribute(MARK_ATTR, '1');
-    el.__ffPrevOutline = el.style.outline;
-    el.style.outline = '3px dashed #b3261e';
-    el.style.outlineOffset = '2px';
-    const tag = document.createElement('span');
-    tag.setAttribute(MARK_ATTR, 'text');
-    tag.setAttribute('role', 'note');
-    tag.textContent = '\u26A0 Required \u2013 fill this in yourself';
-    tag.style.cssText = 'display:inline-block;margin:4px 0 0 4px;padding:2px 8px;font:600 12px/1.4 system-ui,sans-serif;color:#7a1710;background:#fff;border:1px solid #b3261e;border-radius:4px;';
-    el.insertAdjacentElement('afterend', tag);
-    const clear = () => { if (!isEmpty(el)) { tag.remove(); el.style.outline = el.__ffPrevOutline || ''; el.style.outlineOffset = ''; el.removeAttribute(MARK_ATTR); } };
-    el.addEventListener('input', clear); el.addEventListener('change', clear);
-  }
-
-  function reportMissing() {
-    clearMarkers();
-    const missing = [];
-    const seen = new Set();
-    for (const el of deepQuery(document, 'input, textarea, select')) {
+  // Returns Map<element, {value|null, label}>: elements that belong to an experience/education block.
+  // value null = a block with no matching entry, leave the field empty rather than guess.
+  function planEntries(profile, custom) {
+    const G = window.FORMFILL_GROUPS, plan = new Map();
+    if (!G || !((profile.experience || []).length || (profile.education || []).length)) return plan;
+    const els = [], items = [];
+    for (const el of document.querySelectorAll('input, textarea, select')) {
       const type = (el.type || '').toLowerCase();
-      if (['hidden', 'submit', 'button', 'password', 'image', 'reset'].includes(type) || el.disabled || !visible(el)) continue;
-      if (!isRequired(el) || !isEmpty(el)) continue;
-      const name = fieldName(el);
-      if (type === 'radio') { const k = el.name || name; if (seen.has(k)) continue; seen.add(k); }
-      markMissing(el);
-      missing.push(name);
+      const ok = el.tagName === 'SELECT' || el.tagName === 'TEXTAREA' || ENTRY_TYPES.has(type);
+      if (!ok || el.disabled || el.readOnly || !visible(el)) continue;
+      const sig = signature(el);
+      if (matchCustom(el, custom, sig)) continue; // the user's own rules win
+      const kind = G.classify(sig);
+      if (!kind) continue;
+      const lab = labelText(el) || el.getAttribute('aria-label') || el.placeholder || '';
+      els.push(el);
+      items.push({ kind, idx: G.extractIndex([el.name, el.id, lab]), box: boxOf(el) });
     }
-    return missing;
+    for (const a of G.assign(G.groupFields(items), profile)) {
+      const el = els[a.pos];
+      const value = a.value == null ? null : el.tagName === 'SELECT' ? a.value : G.inputValue(el.type, a.value);
+      plan.set(el, { value, label: a.section + ': ' + a.field });
+    }
+    return plan;
   }
 
 

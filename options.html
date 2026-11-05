@@ -30,6 +30,10 @@
   </p>
 </fieldset>
 <form id="form"></form>
+<fieldset><legend>Common questions</legend>
+  <p>Answer these once and they are filled wherever they appear, in English or Arabic forms. Your own custom rules below take priority; leave an answer empty to skip it.</p>
+  <div id="answers" class="grid"></div>
+</fieldset>
 <fieldset><legend>Custom rules</legend>
   <p>Teach it a question: if a field's label contains the text on the left, it gets the value on the right (e.g. <em>work authorization</em> → <em>Yes</em>; for radio buttons the value is the answer's text).</p>
   <div id="rules"></div>
@@ -53,5 +57,5 @@
   <input type="file" id="importFile" accept="application/json" hidden>
   <span id="msg" role="status"></span>
 </div>
-<script src="fields.js"></script><script src="runner.js"></script><script src="options.js"></script><script src="documents.js"></script>
+<script src="fields.js"></script><script src="runner.js"></script><script src="questions.js"></script><script src="options-questions.js"></script><script src="options.js"></script><script src="documents.js"></script>
 </body></html>

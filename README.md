@@ -14,6 +14,8 @@ Fills job / internship / application forms from a profile you control. No server
 - **Multiple profiles** (e.g. English and Arabic): create, duplicate, rename and delete them in Options, and pick the one to use from the popup. Arabic form labels (الاسم الأول، البريد الإلكتروني، الجامعة…) are recognised too.
 - **Custom rules** (Options): "label contains X → answer Y". This is how it learns questions that are specific to you.
 - **Export / Import JSON** in Options shares or backs up the current profile; importing adds it as a new profile.
+- **Application tracker**: each successful fill is logged locally (page address without query/hash, title, date, profile). Open **My applications** from the popup or Options to search, filter, set a status (Applied / Interviewing / Offer / Rejected / Saved), add notes, delete entries and export CSV. Turn it off in Options ("Track my applications").
+- **Welcome page**: opens once after install with a 3-step intro (privacy promise, first profile, how to fill and update). Reopen it any time from the popup's "Help / How it works".
 - Permissions: only `activeTab`, `scripting`, `storage`. It reads no page unless you click.
 
 ## Sharing

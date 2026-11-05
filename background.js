@@ -6,3 +6,7 @@ chrome.commands.onCommand.addListener(async (cmd) => {
   chrome.action.setBadgeText({ text: r.error ? '!' : String(r.filled) });
   setTimeout(() => chrome.action.setBadgeText({ text: '' }), 3000);
 });
+// First install only: open the welcome page (not on updates or browser start).
+chrome.runtime.onInstalled.addListener((d) => {
+  if (d.reason === 'install') chrome.tabs.create({ url: chrome.runtime.getURL('onboarding.html') });
+});

@@ -35,6 +35,12 @@
   <div id="rules"></div>
   <button type="button" class="sec" id="addRule">Add rule</button>
 </fieldset>
+<fieldset id="documents"><legend>Documents</legend>
+  <p>Your CV is attached to resume / CV upload fields (PDF or DOCX, up to 5 MB). Stored only in this browser, one per profile.</p>
+  <p id="cvCurrent" role="status">No CV uploaded for this profile.</p>
+  <label>Upload CV <input type="file" id="cvFile" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></label>
+  <p style="margin:12px 0 0"><button type="button" class="sec" id="cvRemove">Remove CV</button> <span id="cvMsg" role="status"></span></p>
+</fieldset>
 <div class="bar">
   <button type="button" id="save">Save</button>
   <button type="button" class="sec" id="export">Export JSON</button>
@@ -42,5 +48,5 @@
   <input type="file" id="importFile" accept="application/json" hidden>
   <span id="msg" role="status"></span>
 </div>
-<script src="fields.js"></script><script src="options.js"></script>
+<script src="fields.js"></script><script src="runner.js"></script><script src="options.js"></script><script src="documents.js"></script>
 </body></html>

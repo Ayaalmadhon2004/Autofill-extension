@@ -50,6 +50,7 @@ function showProfile() {
   $('pname').value = current().name;
   $('pdel').disabled = state.profiles.length < 2;
   render(current());
+  if (window.refreshDocuments) window.refreshDocuments(current().id, state.profiles.map((p) => p.id));
 }
 
 function switchTo(id) { syncCurrent(); state.activeId = id; showProfile(); }

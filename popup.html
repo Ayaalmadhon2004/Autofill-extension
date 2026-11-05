@@ -8,12 +8,16 @@
   select{width:100%;min-height:44px;font:inherit;padding:0 8px;margin-bottom:10px;border:1px solid #6b7080;border-radius:6px}
   #status{margin:10px 0 0;min-height:20px} .err{color:#b3261e} .ok{color:#17663a}
   a{color:#1a56db}
+  #missing .warn{margin:10px 0 4px;font-weight:700;color:#7a1710} #missing ul{margin:0 0 8px;padding-left:20px} #missing li{margin:2px 0}
 </style></head><body>
 <label for="profile">Profile</label>
 <select id="profile"></select>
 <button id="fill" type="button">Fill this page</button>
 <label><input type="checkbox" id="overwrite"> Overwrite fields that already have text</label>
 <p id="status" role="status"></p>
+<div id="missing" role="status"></div>
 <a href="#" id="opts">Edit my profile</a> · Shortcut: Ctrl+Shift+F
+<!-- tracker-onboarding links -->
+<p style="margin:10px 0 0"><a href="history.html" target="_blank">My applications</a> · <a href="onboarding.html" target="_blank">Help / How it works</a></p>
 <script src="runner.js"></script><script src="popup.js"></script>
 </body></html>

@@ -50,7 +50,7 @@ async function fillActiveTab(overwriteOverride) {
   const all = results.map((r) => r.result).filter(Boolean);
   const filled = all.reduce((n, r) => n + r.filled, 0);
   await recordApplication(tab, profile.id, filled, settings); // tracker (see history.html)
-  return { filled, fields: all.flatMap((r) => r.fields) };
+  return { filled, fields: all.flatMap((r) => r.fields), missing: all.flatMap((r) => r.missing || []) };
 }
 
 // --- Application tracker -----------------------------------------------------

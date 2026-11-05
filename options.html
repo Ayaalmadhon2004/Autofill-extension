@@ -39,6 +39,12 @@
   <div id="rules"></div>
   <button type="button" class="sec" id="addRule">Add rule</button>
 </fieldset>
+<fieldset id="documents"><legend>Documents</legend>
+  <p>Your CV is attached to resume / CV upload fields (PDF or DOCX, up to 5 MB). Stored only in this browser, one per profile.</p>
+  <p id="cvCurrent" role="status">No CV uploaded for this profile.</p>
+  <label>Upload CV <input type="file" id="cvFile" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></label>
+  <p style="margin:12px 0 0"><button type="button" class="sec" id="cvRemove">Remove CV</button> <span id="cvMsg" role="status"></span></p>
+</fieldset>
 <!-- tracker setting (self-contained, see bottom of options.js) -->
 <fieldset><legend>Application tracker</legend>
   <label style="display:flex;gap:10px;align-items:center;min-height:44px"><input type="checkbox" id="trackApps" style="width:24px;height:24px;margin:0"><span id="trackLbl">Track my applications</span></label>
@@ -51,5 +57,5 @@
   <input type="file" id="importFile" accept="application/json" hidden>
   <span id="msg" role="status"></span>
 </div>
-<script src="runner.js"></script><script src="fields.js"></script><script src="questions.js"></script><script src="options-questions.js"></script><script src="options.js"></script>
+<script src="fields.js"></script><script src="runner.js"></script><script src="questions.js"></script><script src="options-questions.js"></script><script src="options.js"></script><script src="documents.js"></script>
 </body></html>

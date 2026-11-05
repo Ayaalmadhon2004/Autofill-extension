@@ -17,6 +17,12 @@ Fills job / internship / application forms from a profile you control. No server
 - **Common questions** (Options): answer work authorization, visa sponsorship, relocation, veteran/disability status, how you heard about us, 18+, criminal record, start date, salary expectations, remote/on-site and languages once per profile. Triggers (English and Arabic) live in `questions.js`. Priority: your custom rules, then these answers, then built-in fields.
 - **Yes/No answers** match radios, dropdowns and checkboxes labelled Yes/No/نعم/لا by meaning, so "No" never picks "Not applicable" or "I know".
 - **Export / Import JSON** in Options shares or backs up the current profile; importing adds it as a new profile.
+- **Features: filler engine.**
+  - Shadow DOM and iframes: fields inside open shadow roots (nested too) and in all frames are filled (Workday, Greenhouse, Lever style pages). Closed shadow roots and cross-origin frames the browser does not grant access to cannot be reached.
+  - Fill report: required fields that are still empty get a dashed outline plus a "Required" text marker, and the popup lists them ("Filled N. M required fields need you:").
+  - CV upload: in Options, **Documents**, upload a PDF/DOCX (max 5 MB) per profile. It is attached to file inputs that look like resume / CV / السيرة الذاتية (cover letter and photo inputs are skipped). Stored in `chrome.storage.local` only.
+- **Application tracker**: each successful fill is logged locally (page address without query/hash, title, date, profile). Open **My applications** from the popup or Options to search, filter, set a status (Applied / Interviewing / Offer / Rejected / Saved), add notes, delete entries and export CSV. Turn it off in Options ("Track my applications").
+- **Welcome page**: opens once after install with a 3-step intro (privacy promise, first profile, how to fill and update). Reopen it any time from the popup's "Help / How it works".
 - Permissions: only `activeTab`, `scripting`, `storage`, `contextMenus` (for the right-click item). It reads no page unless you click.
 
 ## Sharing

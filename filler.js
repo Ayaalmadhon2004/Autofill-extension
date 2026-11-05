@@ -5,7 +5,7 @@
   const FIELDS = window.FORMFILL_FIELDS;
   const SKIP_TYPES = new Set(['hidden', 'submit', 'button', 'file', 'password', 'image', 'reset']);
 
-  const { norm, labelText, signature, hasWord, yesNo } = window.FORMFILL_SIG; // shared with teach.js, see signature.js
+  const { norm, labelText, groupQuestion, signature, hasWord, yesNo } = window.FORMFILL_SIG; // shared with teach.js, see signature.js
   const QUESTIONS = window.FORMFILL_QUESTIONS || [];
 
   // querySelectorAll that also descends into open shadow roots (nested, recursive).

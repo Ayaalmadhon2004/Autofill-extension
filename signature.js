@@ -10,7 +10,7 @@
     const parts = [];
     if (el.labels) for (const l of el.labels) parts.push(l.textContent);
     const by = el.getAttribute('aria-labelledby');
-    if (by) by.split(/\s+/).forEach((id) => { const n = el.ownerDocument.getElementById(id); if (n) parts.push(n.textContent); });
+    if (by) by.split(/\s+/).forEach((id) => { const root = el.getRootNode(); const n = (root.getElementById ? root : el.ownerDocument).getElementById(id); if (n) parts.push(n.textContent); });
     if (!parts.length) { const l = el.closest('label'); if (l) parts.push(l.textContent); }
     return parts.join(' ');
   }

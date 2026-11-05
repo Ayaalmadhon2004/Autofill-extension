@@ -41,7 +41,7 @@ async function fillActiveTab(overwriteOverride) {
   const { profile, settings } = await loadState();
   if (typeof overwriteOverride === 'boolean') settings.overwrite = overwriteOverride;
   const target = { tabId: tab.id, allFrames: true };
-  await chrome.scripting.executeScript({ target, files: ['fields.js', 'signature.js', 'filler.js'] });
+  await chrome.scripting.executeScript({ target, files: ['fields.js', 'questions.js', 'signature.js', 'filler.js'] });
   const results = await chrome.scripting.executeScript({
     target, args: [profile, settings], func: (p, s) => window.__formFill.fill(p, s)
   });

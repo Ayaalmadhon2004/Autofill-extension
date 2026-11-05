@@ -6,14 +6,22 @@
   const SKIP_TYPES = new Set(['hidden', 'submit', 'button', 'file', 'password', 'image', 'reset']);
 
   const { norm, labelText, signature, hasWord, yesNo } = window.FORMFILL_SIG; // shared with teach.js, see signature.js
+  const QUESTIONS = window.FORMFILL_QUESTIONS || [];
 
   function visible(el) { return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); }
 
-  function match(el, customRules) {
+  // Priority: explicit custom rules, then per-profile common-question answers, then built-in fields.
+  function match(el, customRules, answers) {
     const sig = signature(el);
     for (const r of customRules) {
       const m = String(r.match || '').trim().toLowerCase();
       if (m && sig.includes(norm(m))) return { value: r.value, label: 'custom: ' + r.match };
+    }
+    for (const q of QUESTIONS) {
+      const a = answers && answers[q.key];
+      if (a === undefined || a === null || String(a).trim() === '') continue;
+      if (q.exclude && q.exclude.some((x) => sig.includes(x))) continue;
+      if (q.re.some((x) => new RegExp(x).test(sig))) return { value: a, label: 'question: ' + q.label };
     }
     const acTokens = (el.getAttribute('autocomplete') || '').toLowerCase().split(/\s+/);
     for (const f of FIELDS) {
@@ -84,7 +92,7 @@
       if (SKIP_TYPES.has(type) || el.disabled || el.readOnly || !visible(el)) continue;
       const isChoice = type === 'radio' || type === 'checkbox';
       if (!isChoice && el.value && !settings.overwrite && el.tagName !== 'SELECT') continue;
-      const m = match(el, custom);
+      const m = match(el, custom, profile.answers);
       if (!m) continue;
       const value = m.value !== undefined ? m.value : p[m.key];
       if (value === undefined || value === null || String(value).trim() === '') continue;

@@ -3,7 +3,13 @@
 // `ac` = HTML autocomplete tokens, `re` = regexes tested against the field's label/name/id/placeholder.
 // ORDER MATTERS: more specific fields first (first name before full name).
 (function (root) {
-  const F = (key, group, ac, re, extra) => Object.assign({ key, group, ac, re, type: 'text' }, extra);
+  // `label` is the English name used in the fill report (kept stable for tests); the UI shows t('field.<key>').
+  const reportLabel = (key) => (root.FORMFILL_I18N ? root.FORMFILL_I18N.t('field.' + key, null, 'en') : key);
+  const F = (key, group, ac, re, extra) => {
+    const f = Object.assign({ key, group, ac, re, type: 'text' }, extra);
+    Object.defineProperty(f, 'label', { enumerable: true, get: () => reportLabel(key) });
+    return f;
+  };
   root.FORMFILL_FIELDS = [
     F('firstName', 'personal', ['given-name'], ['first name', 'given name', 'forename', 'fname', 'الاسم ال[أا]ول', 'الاسم الشخصي']),
     F('lastName', 'personal', ['family-name'], ['last name', 'family name', 'surname', 'lname', 'اسم العائلة', 'الكنية', 'الاسم ال[أا]خير']),

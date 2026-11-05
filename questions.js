@@ -6,7 +6,13 @@
 // The visible label of a question is t('question.<key>') (see i18n.js). `suggestions` are sample ANSWER values for the user's
 // forms (data, not interface text), so they stay as they are in every UI language.
 (function (root) {
-  const Q = (key, kind, re, extra) => Object.assign({ key, kind, re }, extra);
+  // `label` is the English name used in the fill report (kept stable for tests); the UI shows t('question.<key>').
+  const reportLabel = (key) => (root.FORMFILL_I18N ? root.FORMFILL_I18N.t('question.' + key, null, 'en') : key);
+  const Q = (key, kind, re, extra) => {
+    const q = Object.assign({ key, kind, re }, extra);
+    Object.defineProperty(q, 'label', { enumerable: true, get: () => reportLabel(key) });
+    return q;
+  };
   root.FORMFILL_QUESTIONS = [
     Q('authorizedToWork', 'yesno',
       ['legally (authori[sz]ed|eligible|permitted)', '(authori[sz]ed|eligible|permitted|right) to work', 'work authori[sz]ation', 'employment eligibility',

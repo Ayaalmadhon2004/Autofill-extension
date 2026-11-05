@@ -14,6 +14,9 @@
   :focus-visible{outline:3px solid #f5a623;outline-offset:2px}
   .rule{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px}
   .bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #d5d7dd;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  /* repeating sections (options-entries.js) */
+  .entry{margin:0 0 12px;background:#fafbfc}
+  .entry-bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
   #msg{font-weight:600;color:#17663a}
 </style></head><body>
 <h1>My profile</h1>
@@ -30,6 +33,7 @@
   </p>
 </fieldset>
 <form id="form"></form>
+<div id="entries"></div><!-- repeating sections, see options-entries.js -->
 <fieldset><legend>Custom rules</legend>
   <p>Teach it a question: if a field's label contains the text on the left, it gets the value on the right (e.g. <em>work authorization</em> → <em>Yes</em>; for radio buttons the value is the answer's text).</p>
   <div id="rules"></div>
@@ -42,5 +46,5 @@
   <input type="file" id="importFile" accept="application/json" hidden>
   <span id="msg" role="status"></span>
 </div>
-<script src="fields.js"></script><script src="options.js"></script>
+<script src="fields.js"></script><script src="groups.js"></script><script src="options-entries.js"></script><script src="options.js"></script>
 </body></html>

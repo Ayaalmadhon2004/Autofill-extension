@@ -14,6 +14,7 @@ Fills job / internship / application forms from a profile you control. No server
 - **Multiple profiles** (e.g. English and Arabic): create, duplicate, rename and delete them in Options, and pick the one to use from the popup. Arabic form labels (الاسم الأول، البريد الإلكتروني، الجامعة…) are recognised too.
 - **Custom rules** (Options): "label contains X → answer Y". This is how it learns questions that are specific to you.
 - **Export / Import JSON** in Options shares or backs up the current profile; importing adds it as a new profile.
+- **Work experience and education** (Options): add, remove and reorder entries (most recent first). On forms with repeated blocks the N-th block gets the N-th entry (blocks are found by index names like `[0]`/`_1`, fieldsets, or repetition in page order); a single block gets the first entry. Unclear blocks are skipped, never guessed.
 - Permissions: only `activeTab`, `scripting`, `storage`. It reads no page unless you click.
 
 ## Sharing

@@ -12,7 +12,7 @@
     const parts = [];
     if (el.labels) for (const l of el.labels) parts.push(l.textContent);
     const by = el.getAttribute('aria-labelledby');
-    if (by) by.split(/\s+/).forEach((id) => { const n = document.getElementById(id); if (n) parts.push(n.textContent); });
+    if (by) by.split(/\s+/).forEach((id) => { const root = el.getRootNode(); const n = (root.getElementById ? root : document).getElementById(id); if (n) parts.push(n.textContent); });
     if (!parts.length) { const l = el.closest('label'); if (l) parts.push(l.textContent); }
     return parts.join(' ');
   }
@@ -28,6 +28,14 @@
   function signature(el) {
     return norm([groupQuestion(el), el.name, el.id, el.placeholder,
       el.getAttribute('aria-label'), el.getAttribute('data-automation-id'), labelText(el)].join(' '));
+  }
+
+  // querySelectorAll that also descends into open shadow roots (nested, recursive).
+  function deepQuery(root, selector, out) {
+    out = out || [];
+    out.push(...root.querySelectorAll(selector));
+    for (const host of root.querySelectorAll('*')) if (host.shadowRoot) deepQuery(host.shadowRoot, selector, out);
+    return out;
   }
 
   function visible(el) { return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); }
@@ -90,7 +98,7 @@
     const custom = profile.custom || [];
     const done = [];
     const seenGroups = new Set();
-    for (const el of document.querySelectorAll('input, textarea, select')) {
+    for (const el of deepQuery(document, 'input, textarea, select')) {
       const type = (el.type || '').toLowerCase();
       if (SKIP_TYPES.has(type) || el.disabled || el.readOnly || !visible(el)) continue;
       const isChoice = type === 'radio' || type === 'checkbox';

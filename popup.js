@@ -1,6 +1,9 @@
 const $ = (id) => document.getElementById(id);
 (async () => {
-  const { settings } = await loadState();
+  const { settings, profiles, activeId } = await loadState();
+  const sel = $('profile');
+  for (const p of profiles) sel.add(new Option(p.name, p.id, false, p.id === activeId));
+  sel.onchange = () => saveState({ profiles, activeId: sel.value });
   $('overwrite').checked = !!settings.overwrite;
   $('opts').onclick = (e) => { e.preventDefault(); chrome.runtime.openOptionsPage(); };
   $('fill').onclick = async () => {

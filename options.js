@@ -98,3 +98,15 @@ function switchTo(id) { syncCurrent(); state.activeId = id; showProfile(); }
     } catch { flashMsg('Invalid file'); }
   };
 })();
+
+// --- Application tracker setting (self-contained: saves immediately, independent of the Save button) ---
+(async () => {
+  const box = $('trackApps');
+  const { settings } = await chrome.storage.local.get({ settings: {} });
+  box.checked = !(settings && settings.trackApplications === false); // default ON
+  box.onchange = async () => {
+    const cur = (await chrome.storage.local.get({ settings: {} })).settings || {};
+    await chrome.storage.local.set({ settings: { ...cur, trackApplications: box.checked } });
+    flashMsg('Saved ✓');
+  };
+})();

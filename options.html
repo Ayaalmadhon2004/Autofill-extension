@@ -35,6 +35,11 @@
   <div id="rules"></div>
   <button type="button" class="sec" id="addRule">Add rule</button>
 </fieldset>
+<!-- tracker setting (self-contained, see bottom of options.js) -->
+<fieldset><legend>Application tracker</legend>
+  <label style="display:flex;gap:10px;align-items:center;min-height:44px"><input type="checkbox" id="trackApps" style="width:24px;height:24px;margin:0"><span id="trackLbl">Track my applications</span></label>
+  <p style="margin:0">Remembers the page address (without anything after “?”), title and date each time a fill works. Stored only in this browser. <a href="history.html">View my applications</a></p>
+</fieldset>
 <div class="bar">
   <button type="button" id="save">Save</button>
   <button type="button" class="sec" id="export">Export JSON</button>

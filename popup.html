@@ -16,6 +16,8 @@
   #backup{border:1px solid #f5a623;background:#fff8e6;border-radius:8px;padding:10px;margin-bottom:12px}
   #backup p{margin:0 0 8px} #backup button{margin-top:6px}
   #backup .later{background:#fff;color:#1a56db;border:1px solid #1a56db}
+  #aiSuggest{background:#fff;color:#1a56db;border:1px solid #1a56db;margin-top:10px}
+  #aiMsg:empty{display:none} #aiMsg{margin:6px 0 0}
   #lockLink{background:none;border:0;color:#1a56db;text-decoration:underline;width:auto;min-height:44px;font-size:14px;font-weight:400;padding:0}
 </style></head><body>
 <form id="unlock" hidden>
@@ -31,6 +33,7 @@
 <select id="profile"></select>
 <button id="fill" type="button">Fill this page</button>
 <button type="button" id="allowSite" hidden>Always allow this site</button>
+<button type="button" id="aiSuggest" hidden></button><p id="aiMsg" class="err" role="alert"></p>
 <label><input type="checkbox" id="overwrite"> Overwrite fields that already have text</label>
 <p id="status" role="status"></p>
 <div id="missing" role="status"></div>
@@ -38,5 +41,5 @@
 <a href="#" id="opts">Edit my profile</a> · Shortcut: Ctrl+Shift+F
 <button type="button" id="lockLink" hidden>Lock now</button>
 <p style="margin:10px 0 0"><a href="history.html" target="_blank">My applications</a> · <a href="onboarding.html" target="_blank">Help / How it works</a></p>
-<script src="security.js"></script><script src="runner.js"></script><script src="popup-security.js"></script><script src="popup.js"></script>
+<script src="security.js"></script><script src="runner.js"></script><script src="ai.js"></script><script src="popup-security.js"></script><script src="popup.js"></script><script src="popup-ai.js"></script>
 </body></html>

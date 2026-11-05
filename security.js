@@ -83,6 +83,17 @@
     if (!key) throw err('LOCKED', 'Profiles are locked. Enter your passphrase.');
     return sealWithKey(key, vault, { profiles });
   }
+  // Small secrets (e.g. the optional AI API key) are protected with the same session key as the profiles.
+  async function sealSecret(text) {
+    const key = await sessionKey();
+    if (!key) throw err('LOCKED', 'Profiles are locked. Enter your passphrase.');
+    return encryptWith(key, { s: String(text) });
+  }
+  async function openSecret(box) {
+    const key = await sessionKey();
+    if (!key) throw err('LOCKED', 'Profiles are locked. Enter your passphrase.');
+    try { return (await decryptWith(key, box)).s; } catch { throw err('UNREADABLE', 'The saved secret can no longer be read.'); }
+  }
   async function unlock(passphrase) {
     const vault = await getVault();
     if (!vault) return;
@@ -251,7 +262,7 @@
     DEFAULT_SETTINGS, updateSettings, normalizePattern, hostMatches, checkSite, siteRefusal, allowHost,
     ITER, MIN_ITER, MIN_PASSPHRASE,
     deriveKey, createEnvelope, openEnvelope, sealWithKey, encryptWith, decryptWith,
-    isEnabled, isLocked, lock, unlock, enable, change, disable, openVault, sealProfiles
+    isEnabled, isLocked, lock, unlock, enable, change, disable, openVault, sealProfiles, sealSecret, openSecret
   };
   root.FormFillSecurity = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

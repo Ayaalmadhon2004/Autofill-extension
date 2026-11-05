@@ -5,29 +5,15 @@
   const FIELDS = window.FORMFILL_FIELDS;
   const SKIP_TYPES = new Set(['hidden', 'submit', 'button', 'file', 'password', 'image', 'reset']);
 
-  const norm = (s) => String(s || '')
-    .replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_\-.\[\]]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+  const { norm, labelText, groupQuestion, signature, hasWord, yesNo } = window.FORMFILL_SIG; // shared with teach.js, see signature.js
+  const QUESTIONS = window.FORMFILL_QUESTIONS || [];
 
-  function labelText(el) {
-    const parts = [];
-    if (el.labels) for (const l of el.labels) parts.push(l.textContent);
-    const by = el.getAttribute('aria-labelledby');
-    if (by) by.split(/\s+/).forEach((id) => { const n = document.getElementById(id); if (n) parts.push(n.textContent); });
-    if (!parts.length) { const l = el.closest('label'); if (l) parts.push(l.textContent); }
-    return parts.join(' ');
-  }
-
-  function groupQuestion(el) { // radio/checkbox: the question lives in the fieldset legend, not the option's label
-    if (el.type !== 'radio' && el.type !== 'checkbox') return '';
-    const fs = el.closest('fieldset, [role=radiogroup], [role=group]');
-    if (!fs) return '';
-    const lg = fs.querySelector('legend');
-    return (lg ? lg.textContent : '') + ' ' + (fs.getAttribute('aria-label') || '');
-  }
-
-  function signature(el) {
-    return norm([groupQuestion(el), el.name, el.id, el.placeholder,
-      el.getAttribute('aria-label'), el.getAttribute('data-automation-id'), labelText(el)].join(' '));
+  // querySelectorAll that also descends into open shadow roots (nested, recursive).
+  function deepQuery(root, selector, out) {
+    out = out || [];
+    out.push(...root.querySelectorAll(selector));
+    for (const host of root.querySelectorAll('*')) if (host.shadowRoot) deepQuery(host.shadowRoot, selector, out);
+    return out;
   }
 
   function visible(el) { return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); }
@@ -60,10 +46,20 @@
     el.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
-  function setSelect(el, value) {
+  function pickOption(opts, value) { // yes/no answers match by meaning (English/Arabic), others by text
+    const yn = yesNo(value);
+    if (yn) {
+      const hit = opts.find((o) => (yesNo(o.text) || (/^(y|n|yes|no|true|false)$/i.test(o.value) ? yesNo(o.value) : null)) === yn);
+      if (hit) return hit;
+      if (opts.some((o) => yesNo(o.text))) return null;
+    }
     const v = norm(value);
+    return opts.find((o) => norm(o.text) === v || norm(o.value) === v) || opts.find((o) => v && hasWord(o.text, v));
+  }
+
+  function setSelect(el, value) {
     const opts = [...el.options].filter((o) => o.value !== '' || o.text.trim() !== '');
-    const hit = opts.find((o) => norm(o.text) === v || norm(o.value) === v) || opts.find((o) => v && (norm(o.text).includes(v) || v.includes(norm(o.text)) && norm(o.text).length > 2));
+    const hit = pickOption(opts, value);
     if (!hit) return false;
     el.value = hit.value;
     el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -72,15 +68,17 @@
   }
 
   function setChoice(el, value) { // radio / checkbox
-    const v = norm(value);
-    if (el.type === 'checkbox') {
-      const want = ['yes', 'true', 'checked', '1'].includes(v);
-      if (el.checked !== want) el.click();
-      return true;
-    }
-    const lab = norm(labelText(el) || el.value);
-    if (lab === v || lab.includes(v)) { if (!el.checked) el.click(); return true; }
-    return false;
+    const v = norm(value), yn = yesNo(value);
+    const text = labelText(el).replace(/\s+/g, ' ').trim() || el.value;
+    const own = yesNo(text) || (/^(y|n|yes|no|true|false)$/i.test(el.value) ? yesNo(el.value) : null);
+    let want; // should this control end up selected?
+    if (yn && own) want = own === yn;
+    else if (el.type === 'checkbox') want = yn ? yn === 'yes' : (['true', 'checked', '1'].includes(v) || hasWord(text, v));
+    else want = norm(text) === v || hasWord(text, v);
+    if (el.type === 'checkbox') { if (el.checked !== want) el.click(); return true; }
+    if (!want) return false;
+    if (!el.checked) el.click();
+    return true;
   }
 
   function flash(el) {
@@ -141,6 +139,10 @@
     const plan = planEntries(profile, custom);
     for (const el of document.querySelectorAll('input, textarea, select')) {
       const type = (el.type || '').toLowerCase();
+      if (type === 'file') {
+        if (visible(el) && attachCv(el, cv, settings.overwrite)) { flash(el); done.push('Resume / CV'); }
+        continue;
+      }
       if (SKIP_TYPES.has(type) || el.disabled || el.readOnly || !visible(el)) continue;
       const isChoice = type === 'radio' || type === 'checkbox';
       if (!isChoice && el.value && !settings.overwrite && el.tagName !== 'SELECT') continue;
@@ -156,7 +158,7 @@
       else { setNative(el, String(value)); ok = true; }
       if (ok) { flash(el); done.push(m.label); }
     }
-    return { filled: done.length, fields: done };
+    return { filled: done.length, fields: done, missing: reportMissing() };
   }
 
   window.__formFill = { fill };

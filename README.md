@@ -13,6 +13,9 @@ Fills job / internship / application forms from a profile you control. No server
 - `filler.js`: injected on demand; sets values the way React/Vue forms expect; handles selects, radios, checkboxes.
 - **Multiple profiles** (e.g. English and Arabic): create, duplicate, rename and delete them in Options, and pick the one to use from the popup. Arabic form labels (الاسم الأول، البريد الإلكتروني، الجامعة…) are recognised too.
 - **Custom rules** (Options): "label contains X → answer Y". This is how it learns questions that are specific to you.
+- **Teach this field**: right-click any form field → **Teach Form Filler this field…**, type the answer, and it is saved as a custom rule in the active profile (the same question again updates the rule). Works for text boxes, dropdowns, radios and checkboxes. Uses the `contextMenus` permission; the right-click is only read when you pick the menu item.
+- **Common questions** (Options): answer work authorization, visa sponsorship, relocation, veteran/disability status, how you heard about us, 18+, criminal record, start date, salary expectations, remote/on-site and languages once per profile. Triggers (English and Arabic) live in `questions.js`. Priority: your custom rules, then these answers, then built-in fields.
+- **Yes/No answers** match radios, dropdowns and checkboxes labelled Yes/No/نعم/لا by meaning, so "No" never picks "Not applicable" or "I know".
 - **Export / Import JSON** in Options shares or backs up the current profile; importing adds it as a new profile.
 - **Work experience and education** (Options): add, remove and reorder entries (most recent first). On forms with repeated blocks the N-th block gets the N-th entry (blocks are found by index names like `[0]`/`_1`, fieldsets, or repetition in page order); a single block gets the first entry. Unclear blocks are skipped, never guessed.
 - **Passphrase lock** (Options, optional): encrypts your profiles at rest with AES-GCM; the key comes from your passphrase via PBKDF2-SHA256 (600,000 iterations, random salt and IV). After you unlock once, the derived key lives only in `chrome.storage.session`, so it is gone when the browser closes. While locked the popup asks for the passphrase instead of filling, and `Ctrl+Shift+F` shows a 🔒 badge. **There is no passphrase recovery.**
@@ -22,3 +25,6 @@ Fills job / internship / application forms from a profile you control. No server
 
 ## Sharing
 Zip this folder and upload to the Chrome Web Store (one-time $5 developer fee), then link the store page from LinkedIn.
+
+## Tests
+`NODE_PATH=$(npm root -g) node tests/teaching.fill.test.js` (also `teaching.teach.test.js`, `teaching.options.test.js`) — Playwright, no network.

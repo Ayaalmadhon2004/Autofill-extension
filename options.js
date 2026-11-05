@@ -19,6 +19,7 @@ function render(profile) {
   }
   $('rules').textContent = '';
   (profile.custom || []).forEach(addRule);
+  renderAnswers(profile);
 }
 
 function addRule(r) {
@@ -99,5 +100,17 @@ function switchTo(id) { syncCurrent(); state.activeId = id; showProfile(); }
       const n = { id: 'p' + Date.now(), name: p.name || 'Imported', data: p.data || {}, custom: p.custom || [], experience: p.experience || [], education: p.education || [] };
       state.profiles.push(n); state.activeId = n.id; showProfile(); flashMsg('Imported as a new profile — press Save');
     } catch { flashMsg('Invalid file'); }
+  };
+})();
+
+// --- Application tracker setting (self-contained: saves immediately, independent of the Save button) ---
+(async () => {
+  const box = $('trackApps');
+  const { settings } = await chrome.storage.local.get({ settings: {} });
+  box.checked = !(settings && settings.trackApplications === false); // default ON
+  box.onchange = async () => {
+    const cur = (await chrome.storage.local.get({ settings: {} })).settings || {};
+    await chrome.storage.local.set({ settings: { ...cur, trackApplications: box.checked } });
+    flashMsg('Saved ✓');
   };
 })();

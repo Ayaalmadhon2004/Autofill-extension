@@ -19,5 +19,15 @@ const $ = (id) => document.getElementById(id);
     if (r.error) { st.className = 'err'; st.textContent = 'Error: ' + r.error; return; }
     st.className = r.filled ? 'ok' : '';
     st.textContent = r.filled ? `✓ Filled ${r.filled} field${r.filled > 1 ? 's' : ''}. Review, then submit yourself.` : 'No matching fields found. Add a profile or a custom rule.';
+    const miss = r.missing || [];
+    const box = $('missing'); box.textContent = '';
+    if (miss.length) {
+      const h = document.createElement('p'); h.className = 'warn';
+      h.textContent = `\u26A0 Filled ${r.filled}. ${miss.length} required field${miss.length > 1 ? 's' : ''} need${miss.length > 1 ? '' : 's'} you:`;
+      const ul = document.createElement('ul');
+      for (const m of miss) { const li = document.createElement('li'); li.textContent = m; ul.appendChild(li); }
+      box.append(h, ul);
+      st.textContent = '';
+    }
   };
 })();

@@ -5,30 +5,8 @@
   const FIELDS = window.FORMFILL_FIELDS;
   const SKIP_TYPES = new Set(['hidden', 'submit', 'button', 'file', 'password', 'image', 'reset']);
 
-  const norm = (s) => String(s || '')
-    .replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_\-.\[\]]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
-
-  function labelText(el) {
-    const parts = [];
-    if (el.labels) for (const l of el.labels) parts.push(l.textContent);
-    const by = el.getAttribute('aria-labelledby');
-    if (by) by.split(/\s+/).forEach((id) => { const root = el.getRootNode(); const n = (root.getElementById ? root : document).getElementById(id); if (n) parts.push(n.textContent); });
-    if (!parts.length) { const l = el.closest('label'); if (l) parts.push(l.textContent); }
-    return parts.join(' ');
-  }
-
-  function groupQuestion(el) { // radio/checkbox: the question lives in the fieldset legend, not the option's label
-    if (el.type !== 'radio' && el.type !== 'checkbox') return '';
-    const fs = el.closest('fieldset, [role=radiogroup], [role=group]');
-    if (!fs) return '';
-    const lg = fs.querySelector('legend');
-    return (lg ? lg.textContent : '') + ' ' + (fs.getAttribute('aria-label') || '');
-  }
-
-  function signature(el) {
-    return norm([groupQuestion(el), el.name, el.id, el.placeholder,
-      el.getAttribute('aria-label'), el.getAttribute('data-automation-id'), labelText(el)].join(' '));
-  }
+  const { norm, labelText, signature, hasWord, yesNo } = window.FORMFILL_SIG; // shared with teach.js, see signature.js
+  const QUESTIONS = window.FORMFILL_QUESTIONS || [];
 
   // querySelectorAll that also descends into open shadow roots (nested, recursive).
   function deepQuery(root, selector, out) {
@@ -40,11 +18,18 @@
 
   function visible(el) { return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); }
 
-  function match(el, customRules) {
+  // Priority: explicit custom rules, then per-profile common-question answers, then built-in fields.
+  function match(el, customRules, answers) {
     const sig = signature(el);
     for (const r of customRules) {
       const m = String(r.match || '').trim().toLowerCase();
       if (m && sig.includes(norm(m))) return { value: r.value, label: 'custom: ' + r.match };
+    }
+    for (const q of QUESTIONS) {
+      const a = answers && answers[q.key];
+      if (a === undefined || a === null || String(a).trim() === '') continue;
+      if (q.exclude && q.exclude.some((x) => sig.includes(x))) continue;
+      if (q.re.some((x) => new RegExp(x).test(sig))) return { value: a, label: 'question: ' + q.label };
     }
     const acTokens = (el.getAttribute('autocomplete') || '').toLowerCase().split(/\s+/);
     for (const f of FIELDS) {
@@ -62,10 +47,20 @@
     el.dispatchEvent(new Event('blur', { bubbles: true }));
   }
 
-  function setSelect(el, value) {
+  function pickOption(opts, value) { // yes/no answers match by meaning (English/Arabic), others by text
+    const yn = yesNo(value);
+    if (yn) {
+      const hit = opts.find((o) => (yesNo(o.text) || (/^(y|n|yes|no|true|false)$/i.test(o.value) ? yesNo(o.value) : null)) === yn);
+      if (hit) return hit;
+      if (opts.some((o) => yesNo(o.text))) return null;
+    }
     const v = norm(value);
+    return opts.find((o) => norm(o.text) === v || norm(o.value) === v) || opts.find((o) => v && hasWord(o.text, v));
+  }
+
+  function setSelect(el, value) {
     const opts = [...el.options].filter((o) => o.value !== '' || o.text.trim() !== '');
-    const hit = opts.find((o) => norm(o.text) === v || norm(o.value) === v) || opts.find((o) => v && (norm(o.text).includes(v) || v.includes(norm(o.text)) && norm(o.text).length > 2));
+    const hit = pickOption(opts, value);
     if (!hit) return false;
     el.value = hit.value;
     el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -74,15 +69,17 @@
   }
 
   function setChoice(el, value) { // radio / checkbox
-    const v = norm(value);
-    if (el.type === 'checkbox') {
-      const want = ['yes', 'true', 'checked', '1'].includes(v);
-      if (el.checked !== want) el.click();
-      return true;
-    }
-    const lab = norm(labelText(el) || el.value);
-    if (lab === v || lab.includes(v)) { if (!el.checked) el.click(); return true; }
-    return false;
+    const v = norm(value), yn = yesNo(value);
+    const text = labelText(el).replace(/\s+/g, ' ').trim() || el.value;
+    const own = yesNo(text) || (/^(y|n|yes|no|true|false)$/i.test(el.value) ? yesNo(el.value) : null);
+    let want; // should this control end up selected?
+    if (yn && own) want = own === yn;
+    else if (el.type === 'checkbox') want = yn ? yn === 'yes' : (['true', 'checked', '1'].includes(v) || hasWord(text, v));
+    else want = norm(text) === v || hasWord(text, v);
+    if (el.type === 'checkbox') { if (el.checked !== want) el.click(); return true; }
+    if (!want) return false;
+    if (!el.checked) el.click();
+    return true;
   }
 
   function flash(el) {
@@ -198,7 +195,7 @@
       if (SKIP_TYPES.has(type) || el.disabled || el.readOnly || !visible(el)) continue;
       const isChoice = type === 'radio' || type === 'checkbox';
       if (!isChoice && el.value && !settings.overwrite && el.tagName !== 'SELECT') continue;
-      const m = match(el, custom);
+      const m = match(el, custom, profile.answers);
       if (!m) continue;
       const value = m.value !== undefined ? m.value : p[m.key];
       if (value === undefined || value === null || String(value).trim() === '') continue;

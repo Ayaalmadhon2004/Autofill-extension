@@ -3,7 +3,7 @@
   "name": "One-Click Form Filler",
   "version": "0.1.0",
   "description": "Fill job, internship and application forms in one click from a profile you control. Your data never leaves your browser.",
-  "permissions": ["storage", "activeTab", "scripting"],
+  "permissions": ["storage", "activeTab", "scripting", "contextMenus"],
   "action": { "default_popup": "popup.html", "default_title": "Fill this page" },
   "options_page": "options.html",
   "background": { "service_worker": "background.js" },

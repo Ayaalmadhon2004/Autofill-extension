@@ -13,10 +13,14 @@ Fills job / internship / application forms from a profile you control. No server
 - `filler.js`: injected on demand; sets values the way React/Vue forms expect; handles selects, radios, checkboxes.
 - **Multiple profiles** (e.g. English and Arabic): create, duplicate, rename and delete them in Options, and pick the one to use from the popup. Arabic form labels (الاسم الأول، البريد الإلكتروني، الجامعة…) are recognised too.
 - **Custom rules** (Options): "label contains X → answer Y". This is how it learns questions that are specific to you.
+- **Teach this field**: right-click any form field → **Teach Form Filler this field…**, type the answer, and it is saved as a custom rule in the active profile (the same question again updates the rule). Works for text boxes, dropdowns, radios and checkboxes. Uses the `contextMenus` permission; the right-click is only read when you pick the menu item.
+- **Common questions** (Options): answer work authorization, visa sponsorship, relocation, veteran/disability status, how you heard about us, 18+, criminal record, start date, salary expectations, remote/on-site and languages once per profile. Triggers (English and Arabic) live in `questions.js`. Priority: your custom rules, then these answers, then built-in fields.
+- **Yes/No answers** match radios, dropdowns and checkboxes labelled Yes/No/نعم/لا by meaning, so "No" never picks "Not applicable" or "I know".
 - **Export / Import JSON** in Options shares or backs up the current profile; importing adds it as a new profile.
-- **Application tracker**: each successful fill is logged locally (page address without query/hash, title, date, profile). Open **My applications** from the popup or Options to search, filter, set a status (Applied / Interviewing / Offer / Rejected / Saved), add notes, delete entries and export CSV. Turn it off in Options ("Track my applications").
-- **Welcome page**: opens once after install with a 3-step intro (privacy promise, first profile, how to fill and update). Reopen it any time from the popup's "Help / How it works".
-- Permissions: only `activeTab`, `scripting`, `storage`. It reads no page unless you click.
+- Permissions: only `activeTab`, `scripting`, `storage`, `contextMenus` (for the right-click item). It reads no page unless you click.
 
 ## Sharing
 Zip this folder and upload to the Chrome Web Store (one-time $5 developer fee), then link the store page from LinkedIn.
+
+## Tests
+`NODE_PATH=$(npm root -g) node tests/teaching.fill.test.js` (also `teaching.teach.test.js`, `teaching.options.test.js`) — Playwright, no network.

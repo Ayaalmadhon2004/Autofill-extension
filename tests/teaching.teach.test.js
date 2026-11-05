@@ -94,9 +94,9 @@ const { launch, inject, check, done, root } = require('./teaching.helpers');
 
   // --- background/runner logic (service-worker side) in a vm with a mock chrome.storage
   const store = { profiles: [{ id: 'a', name: 'English', data: {}, custom: [{ match: 'Preferred Pronouns', value: 'old' }] }, { id: 'b', name: 'Arabic', data: {}, custom: [] }], activeId: 'b' };
-  const ctx = { self: null, chrome: { storage: { local: { get: async () => JSON.parse(JSON.stringify(store)), set: async (o) => Object.assign(store, JSON.parse(JSON.stringify(o))) } } }, console };
+  const ctx = { self: null, chrome: { storage: { local: { get: async () => JSON.parse(JSON.stringify(store)), set: async (o) => Object.assign(store, JSON.parse(JSON.stringify(o))), remove: async () => {} }, session: { get: async () => ({}), set: async () => {}, remove: async () => {} } } }, console, TextEncoder, TextDecoder, crypto: require('crypto').webcrypto, atob, btoa };
   ctx.self = ctx; vm.createContext(ctx);
-  for (const f of ['signature.js', 'runner.js']) vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx);
+  for (const f of ['security.js', 'signature.js', 'runner.js']) vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx);
   // signature.js uses `window` only if defined; in the worker root is self
   await vm.runInContext("saveTaughtRule('Preferred pronouns', 'she/her')", ctx);
   check('saves to ACTIVE profile only', store.profiles[1].custom.length === 1 && store.profiles[1].custom[0].value === 'she/her' && store.profiles[0].custom[0].value === 'old', store);

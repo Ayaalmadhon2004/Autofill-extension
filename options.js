@@ -42,7 +42,7 @@ const current = () => state.profiles.find((p) => p.id === state.activeId);
 
 function syncCurrent() { // copy what is on screen into the active profile
   const p = current(); const c = collect();
-  p.data = c.data; p.custom = c.custom; p.answers = collectAnswers(); p.name = $('pname').value.trim() || p.name;
+  p.data = c.data; p.custom = c.custom; p.answers = collectAnswers(); Object.assign(p, collectEntries()); p.name = $('pname').value.trim() || p.name;
 }
 
 function showProfile() {
@@ -52,24 +52,27 @@ function showProfile() {
   $('pdel').disabled = state.profiles.length < 2;
   render(current());
   if (window.refreshDocuments) window.refreshDocuments(current().id, state.profiles.map((p) => p.id));
+  renderEntries(current());
 }
 
 function switchTo(id) { syncCurrent(); state.activeId = id; showProfile(); }
 
 (async () => {
-  const s = await loadState();
+  let s;
+  try { s = await loadState(); } catch (e) { if (e.code === 'LOCKED') { showOptionsUnlock(); return; } throw e; }
   state = { profiles: s.profiles, activeId: s.activeId };
   showProfile();
+  initSecurityOptions();
   $('psel').onchange = (e) => switchTo(e.target.value);
   $('pnew').onclick = () => {
     syncCurrent();
-    const p = { id: 'p' + Date.now(), name: 'New profile', data: {}, custom: [] };
+    const p = { id: 'p' + Date.now(), name: 'New profile', data: {}, custom: [], experience: [], education: [] };
     state.profiles.push(p); state.activeId = p.id; showProfile(); $('pname').focus(); $('pname').select();
   };
   $('pdup').onclick = () => {
     syncCurrent();
     const c = current();
-    const p = { id: 'p' + Date.now(), name: c.name + ' (copy)', data: { ...c.data }, custom: c.custom.map((r) => ({ ...r })), answers: { ...c.answers } };
+    const p = { id: 'p' + Date.now(), name: c.name + ' (copy)', data: { ...c.data }, custom: c.custom.map((r) => ({ ...r })), answers: { ...c.answers }, ...cloneEntries(c) };
     state.profiles.push(p); state.activeId = p.id; showProfile(); $('pname').focus(); $('pname').select();
   };
   $('pdel').onclick = () => {
@@ -95,7 +98,7 @@ function switchTo(id) { syncCurrent(); state.activeId = id; showProfile(); }
     try {
       const p = JSON.parse(await e.target.files[0].text());
       syncCurrent();
-      const n = { id: 'p' + Date.now(), name: p.name || 'Imported', data: p.data || {}, custom: p.custom || [], answers: p.answers || {} };
+      const n = { id: 'p' + Date.now(), name: p.name || 'Imported', data: p.data || {}, custom: p.custom || [], answers: p.answers || {}, experience: p.experience || [], education: p.education || [] };
       state.profiles.push(n); state.activeId = n.id; showProfile(); flashMsg('Imported as a new profile — press Save');
     } catch { flashMsg('Invalid file'); }
   };

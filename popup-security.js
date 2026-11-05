@@ -12,7 +12,7 @@ function showUnlock() {
       await FormFillSecurity.unlock($('pass').value);
       location.reload();
     } catch (x) {
-      err.textContent = x.code === 'BAD_PASSPHRASE' ? 'Wrong passphrase. There is no way to recover a forgotten one.' : 'Could not unlock: ' + x.message;
+      err.textContent = x.code === 'BAD_PASSPHRASE' ? t('lock.wrongPopup') : t('lock.failed', { message: x.message });
       $('pass').select();
     }
   };
@@ -27,13 +27,13 @@ async function initLockLink() { // "Lock now" only when a passphrase is set
 // ---- Site allowlist ("Only fill on these sites") ---------------------------------------------------------
 function offerAllow(host) { // show the one-click "Always allow this site" button
   const b = $('allowSite'); if (!host) return;
-  b.hidden = false; b.textContent = 'Always allow ' + host;
+  b.hidden = false; b.textContent = t('popup.allowSite', { host });
   b.onclick = async () => {
     try {
       await FormFillSecurity.allowHost(host);
       b.hidden = true; $('status').className = 'ok';
-      $('status').textContent = '\u2713 ' + host + ' is now allowed. Press Fill.';
-    } catch (x) { $('status').className = 'err'; $('status').textContent = 'Error: ' + x.message; }
+      $('status').textContent = t('popup.nowAllowed', { host });
+    } catch (x) { $('status').className = 'err'; $('status').textContent = t('popup.error', { message: x.message }); }
   };
 }
 async function initAllowlist(settings) { // tell the user up front when this site would be refused
@@ -52,14 +52,14 @@ async function initBackupBanner(profiles, activeId) {
   if (!r.due) return;
   const box = $('backup'), encrypted = await FormFillSecurity.isEnabled();
   box.textContent = ''; box.hidden = false;
-  const h = document.createElement('p'); h.innerHTML = '<strong></strong>'; h.firstChild.textContent = 'Back up your profiles';
+  const h = document.createElement('p'); h.innerHTML = '<strong></strong>'; h.firstChild.textContent = t('backup.title');
   const msg = document.createElement('p');
-  msg.textContent = (r.days ? 'Last backup: ' + r.days + ' days ago. ' : '') + (encrypted ? '\uD83D\uDD12 The file will be encrypted with your passphrase.' : '\u26A0 The file will contain your details as plain text. Set a passphrase in Options to encrypt it.');
-  const go = document.createElement('button'); go.type = 'button'; go.textContent = 'Download backup';
-  const later = document.createElement('button'); later.type = 'button'; later.className = 'later'; later.textContent = 'Remind me tomorrow';
+  msg.textContent = [r.days ? t('backup.lastPopup', { n: r.days }) : '', encrypted ? t('backup.willEncrypt') : t('backup.willPlainHint')].filter(Boolean).join(' ');
+  const go = document.createElement('button'); go.type = 'button'; go.textContent = t('backup.download');
+  const later = document.createElement('button'); later.type = 'button'; later.className = 'later'; later.textContent = t('backup.later');
   box.append(h, msg, go, later);
   go.onclick = async () => {
-    try { await FormFillSecurity.downloadBackup(profiles, activeId); box.textContent = '\u2713 Backup downloaded.'; setTimeout(() => { box.hidden = true; }, 2500); }
+    try { await FormFillSecurity.downloadBackup(profiles, activeId); box.textContent = t('backup.done'); setTimeout(() => { box.hidden = true; }, 2500); }
     catch (x) { msg.textContent = '\u26A0 ' + x.message; }
   };
   later.onclick = async () => { await FormFillSecurity.backupSnooze(); box.hidden = true; };

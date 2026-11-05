@@ -24,16 +24,17 @@ function secMessage(panel, text, bad) {
   m.style.color = bad ? '#b3261e' : '#17663a';
   m.textContent = (bad ? '⚠ ' : '✓ ') + text; // icon + word + colour
 }
-const secErrText = (x) => x.code === 'BAD_PASSPHRASE' ? 'Wrong passphrase.' : x.message;
+const secErrText = (x) => x.code === 'BAD_PASSPHRASE' ? t('lock.wrongShort') : x.message;
 
 // ---- Lock screen for the options page ----------------------------------------------------------------
 function showOptionsUnlock() {
   document.body.textContent = '';
+  FORMFILL_I18N.mountSwitcher(document.body);
   const form = secEl('form', {},
-    secEl('h1', { textContent: 'Profiles are locked' }),
-    secEl('p', { textContent: 'Enter your passphrase to view and edit your profiles. There is no way to recover a forgotten passphrase.' }),
-    secField('Passphrase', 'unlockPass', 'password', { autocomplete: 'current-password', required: true }),
-    secEl('p', {}, secEl('button', { type: 'submit', textContent: 'Unlock' })));
+    secEl('h1', { textContent: t('lock.title') }),
+    secEl('p', { textContent: t('lock.optionsIntro') }),
+    secField(t('lock.passphrase'), 'unlockPass', 'password', { autocomplete: 'current-password', required: true }),
+    secEl('p', {}, secEl('button', { type: 'submit', textContent: t('lock.unlock') })));
   document.body.appendChild(form);
   const msg = secEl('p', {}); msg.setAttribute('role', 'alert'); msg.style.color = '#b3261e'; form.appendChild(msg);
   $('unlockPass').focus();
@@ -47,12 +48,10 @@ function showOptionsUnlock() {
 // ---- Passphrase lock panel -----------------------------------------------------------------------------
 async function renderPassphrasePanel() {
   const enabled = await FormFillSecurity.isEnabled();
-  const panel = secPanel('sec-pass', 'Passphrase lock');
+  const panel = secPanel('sec-pass', t('optsec.passLegend'));
   const min = FormFillSecurity.MIN_PASSPHRASE;
-  panel.append(secEl('p', { textContent: enabled
-    ? '🔒 Passphrase lock is ON. Your profiles are encrypted on this device and you unlock them once per browser session.'
-    : 'Optional. Encrypt your profiles on this device (AES-GCM, key derived from your passphrase). You enter it once per browser session.' }));
-  panel.append(secEl('p', { textContent: 'There is no passphrase recovery. If you forget it, your profiles and encrypted backups cannot be read by anyone, including us. Keep an unencrypted copy somewhere safe if that worries you.' }));
+  panel.append(secEl('p', { textContent: enabled ? t('optsec.passOn') : t('optsec.passOff') }));
+  panel.append(secEl('p', { textContent: t('optsec.passWarn') }));
   panel.lastChild.style.fontWeight = '600';
   const mk = (txt, fn, cls) => secEl('button', { type: 'button', className: cls || '', textContent: txt, onclick: fn });
   const run = (fn, okText) => async () => {
@@ -61,31 +60,31 @@ async function renderPassphrasePanel() {
   };
   const newPair = () => {
     const a = $('pp-new').value, b = $('pp-new2').value;
-    if (a !== b) throw Object.assign(new Error('The two new passphrases do not match.'), { code: 'MISMATCH' });
+    if (a !== b) throw Object.assign(new Error(t('optsec.mismatch')), { code: 'MISMATCH' });
     return a;
   };
   const grid = secEl('div', { className: 'grid' });
   panel.append(grid);
   if (!enabled) {
-    grid.append(secField('New passphrase (min ' + min + ' characters)', 'pp-new', 'password', { autocomplete: 'new-password' }),
-      secField('Repeat new passphrase', 'pp-new2', 'password', { autocomplete: 'new-password' }));
-    panel.append(secEl('p', {}, mk('Turn on passphrase lock', run(async () => {
+    grid.append(secField(t('optsec.newPass', { n: min }), 'pp-new', 'password', { autocomplete: 'new-password' }),
+      secField(t('optsec.repeatPass'), 'pp-new2', 'password', { autocomplete: 'new-password' }));
+    panel.append(secEl('p', {}, mk(t('optsec.turnOn'), run(async () => {
       const pass = newPair();
       syncCurrent(); await saveState({ profiles: state.profiles, activeId: state.activeId }); // include unsaved edits
       await FormFillSecurity.enable(pass, state.profiles);
-    }, 'Passphrase lock is on. Your profiles are now stored encrypted.'))));
+    }, t('optsec.turnedOn')))));
   } else {
-    grid.append(secField('Current passphrase', 'pp-old', 'password', { autocomplete: 'current-password' }),
-      secField('New passphrase (min ' + min + ' characters)', 'pp-new', 'password', { autocomplete: 'new-password' }),
-      secField('Repeat new passphrase', 'pp-new2', 'password', { autocomplete: 'new-password' }));
+    grid.append(secField(t('optsec.currentPass'), 'pp-old', 'password', { autocomplete: 'current-password' }),
+      secField(t('optsec.newPass', { n: min }), 'pp-new', 'password', { autocomplete: 'new-password' }),
+      secField(t('optsec.repeatPass'), 'pp-new2', 'password', { autocomplete: 'new-password' }));
     panel.append(secEl('p', { style: 'display:flex;gap:8px;flex-wrap:wrap' },
-      mk('Change passphrase', run(async () => { const pass = newPair(); await FormFillSecurity.change($('pp-old').value, pass); },
-        'Passphrase changed. Older encrypted backups still need the old passphrase.')),
-      mk('Remove passphrase', run(async () => {
-        if (!confirm('Remove the passphrase? Your profiles will be stored unencrypted on this device.')) return;
+      mk(t('optsec.change'), run(async () => { const pass = newPair(); await FormFillSecurity.change($('pp-old').value, pass); },
+        t('optsec.changed'))),
+      mk(t('optsec.remove'), run(async () => {
+        if (!confirm(t('optsec.confirmRemove'))) return;
         await FormFillSecurity.disable($('pp-old').value);
-      }, 'Passphrase removed. Profiles are stored unencrypted.'), 'sec'),
-      mk('Lock now', async () => { await FormFillSecurity.lock(); location.reload(); }, 'sec')));
+      }, t('optsec.removed')), 'sec'),
+      mk(t('lock.now'), async () => { await FormFillSecurity.lock(); location.reload(); }, 'sec')));
   }
 }
 
@@ -101,24 +100,24 @@ async function initSecurityOptions() {
 // ---- Site allowlist panel ----------------------------------------------------------------------------------
 async function renderAllowlistPanel() {
   const { settings } = await loadState();
-  const panel = secPanel('sec-sites', 'Only fill on these sites');
+  const panel = secPanel('sec-sites', t('optsec.sitesLegend'));
   panel.append(
-    secEl('p', { textContent: 'Optional. When on, Fill (button and Ctrl+Shift+F) is refused on any site not listed here. One site per line. "example.com" matches only that host; "*.example.com" matches example.com and all its subdomains. You can also add the current site from the popup.' }),
+    secEl('p', { textContent: t('optsec.sitesHelp') }),
     secEl('label', { htmlFor: 'sites-on', style: 'display:flex;gap:8px;align-items:center;min-height:44px' },
-      secEl('input', { type: 'checkbox', id: 'sites-on', checked: !!settings.allowlistEnabled, style: 'width:24px;min-height:24px;margin:0' }), 'Only fill on the sites listed below'),
-    secField('Allowed sites', 'sites-list', 'text'));
+      secEl('input', { type: 'checkbox', id: 'sites-on', checked: !!settings.allowlistEnabled, style: 'width:24px;min-height:24px;margin:0' }), t('optsec.sitesOn')),
+    secField(t('optsec.sitesList'), 'sites-list', 'text'));
   const ta = secEl('textarea', { id: 'sites-list', dir: 'ltr', value: (settings.allowedSites || []).join('\n'), placeholder: 'careers.example.com\n*.greenhouse.io' });
-  panel.querySelector('label[for=sites-list]').replaceChildren('Allowed sites', ta);
-  panel.append(secEl('p', {}, secEl('button', { type: 'button', textContent: 'Save site list', onclick: async () => {
+  panel.querySelector('label[for=sites-list]').replaceChildren(t('optsec.sitesList'), ta);
+  panel.append(secEl('p', {}, secEl('button', { type: 'button', textContent: t('optsec.sitesSave'), onclick: async () => {
     const lines = ta.value.split(/\n+/).map((l) => l.trim()).filter(Boolean);
     const good = [], bad = [];
     for (const l of lines) { const p = FormFillSecurity.normalizePattern(l); if (p) { if (!good.includes(p)) good.push(p); } else bad.push(l); }
-    if (bad.length) return secMessage(panel, 'Not a valid site: ' + bad.join(', '), true);
+    if (bad.length) return secMessage(panel, t('optsec.sitesInvalid', { sites: bad.join(', ') }), true);
     const on = $('sites-on').checked;
-    if (on && !good.length && !confirm('The list is empty, so Fill will be refused everywhere. Continue?')) return;
+    if (on && !good.length && !confirm(t('optsec.sitesEmpty'))) return;
     await FormFillSecurity.updateSettings((s) => { s.allowlistEnabled = on; s.allowedSites = good; return s; });
     ta.value = good.join('\n');
-    secMessage(panel, on ? 'Saved. Fill is limited to ' + good.length + ' site' + (good.length === 1 ? '' : 's') + '.' : 'Saved. The list is off, Fill works on every site.');
+    secMessage(panel, on ? t('optsec.sitesSaved', { n: good.length }) : t('optsec.sitesOff'));
   } })));
 }
 
@@ -126,24 +125,22 @@ async function renderAllowlistPanel() {
 async function renderBackupPanel() {
   const { settings } = await loadState();
   const encrypted = await FormFillSecurity.isEnabled();
-  const panel = secPanel('sec-backup', 'Backup');
-  const warn = secEl('p', { id: 'backup-note', textContent: encrypted
-    ? '\uD83D\uDD12 Backups are encrypted with your passphrase (needed again to import them).'
-    : '\u26A0 Without a passphrase the backup file contains your details as plain text. Keep it somewhere safe, or set a passphrase above to encrypt it.' });
+  const panel = secPanel('sec-backup', t('optsec.backupLegend'));
+  const warn = secEl('p', { id: 'backup-note', textContent: encrypted ? t('optsec.backupEncrypted') : t('optsec.backupPlain') });
   warn.style.fontWeight = '600';
-  const days = secField('Remind me to back up every (days, 0 = never)', 'backup-days', 'number', { min: 0, max: 365, step: 1, value: String(settings.backupEveryDays) });
-  const filePass = secField('Passphrase of the backup file (only if it is encrypted)', 'backup-filepass', 'password', { autocomplete: 'off' });
+  const days = secField(t('optsec.backupDays'), 'backup-days', 'number', { min: 0, max: 365, step: 1, value: String(settings.backupEveryDays) });
+  const filePass = secField(t('optsec.backupFilePass'), 'backup-filepass', 'password', { autocomplete: 'off' });
   const file = secEl('input', { type: 'file', id: 'backup-file', accept: 'application/json,.json', hidden: true });
   panel.append(
-    secEl('p', { textContent: 'One file with ALL your profiles. Import merges them into what you have; nothing is overwritten or deleted.' }), warn,
+    secEl('p', { textContent: t('optsec.backupIntro') }), warn,
     secEl('div', { className: 'grid' }, days, filePass),
     secEl('p', { style: 'display:flex;gap:8px;flex-wrap:wrap' },
-      secEl('button', { type: 'button', textContent: 'Download backup of all profiles', onclick: doBackupDownload }),
-      secEl('button', { type: 'button', className: 'sec', textContent: 'Import backup (merge)', onclick: () => file.click() }),
-      secEl('button', { type: 'button', className: 'sec', textContent: 'Save reminder interval', onclick: async () => {
+      secEl('button', { type: 'button', textContent: t('optsec.backupDownload'), onclick: doBackupDownload }),
+      secEl('button', { type: 'button', className: 'sec', textContent: t('optsec.backupImport'), onclick: () => file.click() }),
+      secEl('button', { type: 'button', className: 'sec', textContent: t('optsec.backupSaveInterval'), onclick: async () => {
         const n = Math.max(0, Math.min(365, Math.floor(Number($('backup-days').value) || 0)));
         await FormFillSecurity.updateSettings((s) => { s.backupEveryDays = n; return s; });
-        $('backup-days').value = n; secMessage(panel, n ? 'Reminder every ' + n + ' days.' : 'Reminders are off.');
+        $('backup-days').value = n; secMessage(panel, n ? t('optsec.reminderEvery', { n }) : t('optsec.remindersOff'));
       } })), file);
   file.onchange = async () => {
     try {
@@ -153,7 +150,7 @@ async function renderBackupPanel() {
       state.profiles = m.profiles;
       await saveState({ profiles: state.profiles, activeId: state.activeId });
       showProfile();
-      secMessage(panel, 'Merged ' + m.added + ' new profile' + (m.added === 1 ? '' : 's') + (m.skipped ? ', ' + m.skipped + ' already present' : '') + '. Saved.');
+      secMessage(panel, t(m.skipped ? 'optsec.mergedSkipped' : 'optsec.merged', { n: m.added, skipped: m.skipped }));
     } catch (x) { secMessage(panel, secErrText(x), true); }
     file.value = '';
   };
@@ -164,7 +161,7 @@ async function doBackupDownload() {
   try {
     syncCurrent(); // include what is on screen
     const r = await FormFillSecurity.downloadBackup(state.profiles, state.activeId);
-    secMessage(panel, r.encrypted ? 'Encrypted backup downloaded.' : 'Backup downloaded. It contains plain text: keep it safe.');
+    secMessage(panel, r.encrypted ? t('optsec.backupDownloadedEncrypted') : t('optsec.backupDownloadedPlain'));
     const b = $('backup-banner'); if (b) b.remove();
   } catch (x) { secMessage(panel, secErrText(x), true); }
 }
@@ -174,11 +171,11 @@ async function renderBackupBanner() {
   if (!r.due) return;
   const encrypted = await FormFillSecurity.isEnabled();
   const box = secEl('div', { id: 'backup-banner', style: 'border:1px solid #f5a623;background:#fff8e6;border-radius:10px;padding:12px 16px;margin-bottom:16px' },
-    secEl('strong', { textContent: 'Back up your profiles' }),
-    secEl('p', { textContent: (r.days ? 'Your last backup was ' + r.days + ' days ago. ' : '') + (encrypted ? '\uD83D\uDD12 The file will be encrypted with your passphrase.' : '\u26A0 The file will contain your details as plain text.') }),
+    secEl('strong', { textContent: t('backup.title') }),
+    secEl('p', { textContent: [r.days ? t('backup.lastOptions', { n: r.days }) : '', encrypted ? t('backup.willEncrypt') : t('backup.willPlain')].filter(Boolean).join(' ') }),
     secEl('p', { style: 'display:flex;gap:8px;flex-wrap:wrap' },
-      secEl('button', { type: 'button', textContent: 'Download backup', onclick: doBackupDownload }),
-      secEl('button', { type: 'button', className: 'sec', textContent: 'Remind me tomorrow', onclick: async () => { await FormFillSecurity.backupSnooze(); box.remove(); } })));
-  box.setAttribute('role', 'region'); box.setAttribute('aria-label', 'Backup reminder');
+      secEl('button', { type: 'button', textContent: t('backup.download'), onclick: doBackupDownload }),
+      secEl('button', { type: 'button', className: 'sec', textContent: t('backup.later'), onclick: async () => { await FormFillSecurity.backupSnooze(); box.remove(); } })));
+  box.setAttribute('role', 'region'); box.setAttribute('aria-label', t('backup.region'));
   document.querySelector('h1').after(box);
 }

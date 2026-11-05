@@ -9,7 +9,7 @@ const DAY = 86400000;
 const same = (a, b) => assert.equal(JSON.stringify(a), JSON.stringify(b)); // vm objects have another realm's prototypes
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('ok -', name); };
 const rejects = async (p, code) => { try { await p; } catch (e) { assert.equal(e.code, code, e.message); return; } assert.fail('expected ' + code); };
-const mk = (local) => loadExtension(['security.js', 'runner.js'], { local });
+const mk = (local) => loadExtension(['i18n.js', 'security.js', 'runner.js'], { local });
 
 (async () => {
   await t('plain backup holds ALL profiles', async () => {

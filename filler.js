@@ -3,6 +3,7 @@
 (function () {
   if (window.__formFill) return;
   const FIELDS = window.FORMFILL_FIELDS;
+  const I18N = window.FORMFILL_I18N; // texts shown in the page; the language is passed in by fill()
   const SKIP_TYPES = new Set(['hidden', 'submit', 'button', 'file', 'password', 'image', 'reset']);
 
   const { norm, labelText, groupQuestion, signature, hasWord, yesNo } = window.FORMFILL_SIG; // shared with teach.js, see signature.js
@@ -162,8 +163,9 @@
     const tag = document.createElement('span');
     tag.setAttribute(MARK_ATTR, 'text');
     tag.setAttribute('role', 'note');
-    tag.textContent = '\u26A0 Required \u2013 fill this in yourself';
-    tag.style.cssText = 'display:inline-block;margin:4px 0 0 4px;padding:2px 8px;font:600 12px/1.4 system-ui,sans-serif;color:#7a1710;background:#fff;border:1px solid #b3261e;border-radius:4px;';
+    tag.textContent = I18N.t('filler.required');
+    tag.dir = I18N.dirOf(); tag.lang = I18N.getLang();
+    tag.style.cssText = 'display:inline-block;margin-block-start:4px;margin-inline-start:4px;padding:2px 8px;font:600 12px/1.4 system-ui,sans-serif;color:#7a1710;background:#fff;border:1px solid #b3261e;border-radius:4px;';
     el.insertAdjacentElement('afterend', tag);
     const clear = () => { if (!isEmpty(el)) { tag.remove(); el.style.outline = el.__ffPrevOutline || ''; el.style.outlineOffset = ''; el.removeAttribute(MARK_ATTR); } };
     el.addEventListener('input', clear); el.addEventListener('change', clear);
@@ -230,7 +232,8 @@
   }
 
 
-  function fill(profile, settings, cv) {
+  function fill(profile, settings, cv, lang) {
+    if (lang) I18N.setLang(lang, { persist: false });
     settings = settings || {};
     const p = Object.assign({}, profile.data || {});
     if (!p.fullName) p.fullName = [p.firstName, p.lastName].filter(Boolean).join(' ');

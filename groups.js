@@ -3,21 +3,20 @@
 // Conservative by design: anything ambiguous is left alone (returns null / drops the field).
 (function (root) {
   // Profile side: what a user can store per entry. Single source of truth for options UI and the filler.
+  // Visible texts come from i18n.js: t('section.<name>.title' | '.item' | '.add' | '.<labelKey>').
   const SECTIONS = {
     experience: {
-      title: 'Work experience', itemLabel: 'Experience', addLabel: 'Add experience',
       fields: [
-        { key: 'company', label: 'Company' }, { key: 'title', label: 'Job title' },
-        { key: 'start', label: 'Start (e.g. 2021-05)' }, { key: 'end', label: 'End (e.g. 2023-08, or Present)' },
-        { key: 'description', label: 'Description', type: 'textarea' }
+        { key: 'company', labelKey: 'section.experience.company' }, { key: 'title', labelKey: 'section.experience.jobTitle' },
+        { key: 'start', labelKey: 'section.experience.start' }, { key: 'end', labelKey: 'section.experience.end' },
+        { key: 'description', labelKey: 'section.experience.description', type: 'textarea' }
       ]
     },
     education: {
-      title: 'Education history', itemLabel: 'Education', addLabel: 'Add education',
       fields: [
-        { key: 'school', label: 'School / university' }, { key: 'degree', label: 'Degree' },
-        { key: 'major', label: 'Major / field of study' }, { key: 'year', label: 'Graduation year' },
-        { key: 'gpa', label: 'GPA' }
+        { key: 'school', labelKey: 'section.education.school' }, { key: 'degree', labelKey: 'section.education.degree' },
+        { key: 'major', labelKey: 'section.education.major' }, { key: 'year', labelKey: 'section.education.year' },
+        { key: 'gpa', labelKey: 'section.education.gpa' }
       ]
     }
   };

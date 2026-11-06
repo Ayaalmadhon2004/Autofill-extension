@@ -45,11 +45,12 @@ async function saveTaughtRule(match, value) {
   await saveState({ profiles, activeId });
 }
 async function fillActiveTab(overwriteOverride) {
+  await FORMFILL_I18N.ready; // so messages (and the in-page marker) use the saved language
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab || !/^https?:/.test(tab.url || '')) return { error: 'This page cannot be filled.' };
+  if (!tab || !/^https?:/.test(tab.url || '')) return { error: FORMFILL_I18N.t('run.cannotFill') };
   let state;
   try { state = await loadState(); } catch (e) {
-    if (e.code === 'LOCKED') return { error: 'Locked. Open the extension popup and enter your passphrase.', locked: true };
+    if (e.code === 'LOCKED') return { error: FORMFILL_I18N.t('run.locked'), locked: true };
     throw e;
   }
   const { profile, settings } = state;
@@ -59,9 +60,9 @@ async function fillActiveTab(overwriteOverride) {
   const cvKey = 'cv_' + profile.id; // CV file stored per profile by options.js (Documents section)
   const cv = (await chrome.storage.local.get(cvKey))[cvKey] || null;
   const target = { tabId: tab.id, allFrames: true };
-  await chrome.scripting.executeScript({ target, files: ['fields.js', 'questions.js', 'groups.js', 'signature.js', 'filler.js'] });
+  await chrome.scripting.executeScript({ target, files: ['i18n.js', 'fields.js', 'questions.js', 'groups.js', 'signature.js', 'filler.js'] });
   const results = await chrome.scripting.executeScript({
-    target, args: [profile, settings, cv], func: (p, s, c) => window.__formFill.fill(p, s, c)
+    target, args: [profile, settings, cv, FORMFILL_I18N.getLang()], func: (p, s, c, l) => window.__formFill.fill(p, s, c, l)
   });
   const all = results.map((r) => r.result).filter(Boolean);
   const filled = all.reduce((n, r) => n + r.filled, 0);

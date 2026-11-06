@@ -12,6 +12,7 @@ const ok = (c, m) => { assert.ok(c, m); pass++; console.log('PASS', m); };
 async function load(page, html, filerSrc) {
   await page.setContent(html);
   await page.evaluate(() => { delete window.__formFill; });
+  await page.addScriptTag({ path: path.join(root, 'i18n.js') });
   await page.addScriptTag({ path: path.join(root, 'fields.js') });
   if (!filerSrc) { await page.addScriptTag({ path: path.join(root, 'questions.js') }); await page.addScriptTag({ path: path.join(root, 'signature.js') }); }
   if (filerSrc) await page.addScriptTag({ content: filerSrc }); else await page.addScriptTag({ path: path.join(root, 'filler.js') });
@@ -22,11 +23,11 @@ const run = (page, withCv) => page.evaluate(([p, c]) => window.__formFill.fill(p
   const browser = await chromium.launch();
   const page = await browser.newPage();
 
-  // Regression: plain English + Arabic form, compare with the pre-change filler.js on main
+  // Regression: plain English + Arabic form, compare with the filler.js from before the engine work (8062327)
   const normal = `<form><label>First name <input name=a></label><label for=e>Email</label><input id=e>
     <label>Last name<input></label><label>الجامعة <input></label><label>Phone <input type=tel></label><select aria-label="Country"><option value="">-</option><option>Egypt</option></select></form>`;
   const dump = () => page.evaluate(() => [...document.querySelectorAll('input,select')].map((e) => e.value));
-  const oldSrc = execSync('git show origin/main:filler.js', { cwd: root }).toString();
+  const oldSrc = execSync('git show 8062327:filler.js', { cwd: root }).toString();
   await load(page, normal, oldSrc);
   const rOld = await page.evaluate((p) => window.__formFill.fill(p, {}), profile); const vOld = await dump();
   await load(page, normal);
@@ -52,7 +53,7 @@ const run = (page, withCv) => page.evaluate(([p, c]) => window.__formFill.fill(p
   await load(page, `<iframe id=fr srcdoc="<label>Email <input id=x></label>"></iframe>`);
   await page.waitForSelector('#fr');
   const frame = page.frames().find((f) => f !== page.mainFrame());
-  for (const f of ['fields.js', 'questions.js', 'signature.js', 'filler.js']) await frame.addScriptTag({ path: path.join(root, f) });
+  for (const f of ['i18n.js', 'fields.js', 'questions.js', 'signature.js', 'filler.js']) await frame.addScriptTag({ path: path.join(root, f) });
   const fr = await frame.evaluate((p) => window.__formFill.fill(p, {}), profile);
   ok(fr.filled === 1 && await frame.$eval('#x', (e) => e.value) === 'aya@example.com', 'iframe filled by per-frame injection');
 

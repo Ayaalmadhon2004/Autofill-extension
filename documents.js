@@ -16,7 +16,7 @@
   async function show() {
     const key = 'cv_' + pid;
     const cv = (await chrome.storage.local.get(key))[key];
-    $('cvCurrent').textContent = cv ? `Current CV: ${cv.name} (${Math.max(1, Math.round(cv.size / 1024))} KB)` : 'No CV uploaded for this profile.';
+    $('cvCurrent').textContent = cv ? t('options.docs.current', { name: cv.name, kb: Math.max(1, Math.round(cv.size / 1024)) }) : t('options.docs.none');
     $('cvRemove').disabled = !cv;
   }
 
@@ -37,12 +37,13 @@
     const f = e.target.files[0]; e.target.value = '';
     if (!f) return;
     const ext = f.name.split('.').pop().toLowerCase();
-    if (!TYPES[ext]) return say('Only PDF or DOCX files are accepted.');
-    if (f.size > MAX) return say('File is larger than 5 MB.');
+    if (!TYPES[ext]) return say(t('options.docs.badType'));
+    if (f.size > MAX) return say(t('options.docs.tooBig'));
     try {
       await chrome.storage.local.set({ ['cv_' + pid]: { name: f.name, type: TYPES[ext], size: f.size, b64: toB64(await f.arrayBuffer()) } });
-      say('CV saved ✓'); show();
-    } catch { say('Could not save (browser storage is full).'); }
+      say(t('options.docs.saved')); show();
+    } catch { say(t('options.docs.full')); }
   };
-  $('cvRemove').onclick = async () => { await chrome.storage.local.remove('cv_' + pid); say('CV removed'); show(); };
+  $('cvRemove').onclick = async () => { await chrome.storage.local.remove('cv_' + pid); say(t('options.docs.removed')); show(); };
+  FORMFILL_I18N.onChange(() => { say(''); if (pid) show(); }); // language changed: redraw the status line
 })();

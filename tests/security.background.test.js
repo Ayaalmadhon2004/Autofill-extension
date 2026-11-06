@@ -10,7 +10,7 @@ const profiles = [{ id: 'default', name: 'English', data: { firstName: 'Aya' }, 
 function boot({ local, url = 'https://example.com/apply' }) {
   const badge = { text: [], color: [], title: [] };
   let handler;
-  const ctx = loadExtension(['security.js', 'runner.js'], {
+  const ctx = loadExtension(['i18n.js', 'security.js', 'runner.js'], {
     local,
     tabs: { query: async () => [{ id: 1, url }] },
     scripting: { executeScript: async (o) => (o.files ? [] : [{ result: { filled: 3, fields: ['x'] } }]) }

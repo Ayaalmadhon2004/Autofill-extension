@@ -20,7 +20,7 @@ function boot({ settings, key, perm = true, extra = {} } = {}) {
   const local = Object.assign({ profiles: [profile], activeId: 'p1' }, extra);
   if (settings) local.aiSettings = settings;
   if (key) local.aiKey = key;
-  const ctx = loadExtension(['security.js', 'runner.js', 'ai.js'], { local });
+  const ctx = loadExtension(['i18n.js', 'security.js', 'runner.js', 'ai.js'], { local });
   const log = { fetches: [], permChecks: 0 };
   ctx.chrome.permissions = { contains: async () => { log.permChecks++; return perm; } };
   ctx.fetchImpl = async () => ({ ok: true, status: 200, json: async () => ({ content: [{ type: 'text', text: 'Draft answer.' }] }) });

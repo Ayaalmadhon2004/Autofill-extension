@@ -12,6 +12,12 @@
   const SESSION_KEY = 'vaultKey';
 
   const err = (code, message) => Object.assign(new Error(message), { code });
+  // User-facing messages come from i18n.js (English unless the user chose Arabic). Errors carry the text of the moment.
+  const tr = (key, vars) => {
+    const I = root.FORMFILL_I18N || (typeof require === 'function' ? require('./i18n.js') : null);
+    return I ? I.t(key, vars) : key;
+  };
+  const lockedError = () => err('LOCKED', tr('sec.locked'));
   const webcrypto = () => root.crypto || globalThis.crypto;
   const subtle = () => webcrypto().subtle;
   const enc = new TextEncoder(), dec = new TextDecoder();
@@ -21,7 +27,7 @@
 
   // ---- crypto primitives (pure: no chrome.* here) -------------------------------------------------
   async function deriveKey(passphrase, salt, iter) {
-    if (!(iter >= MIN_ITER)) throw err('BAD_VAULT', 'Unsupported key derivation settings');
+    if (!(iter >= MIN_ITER)) throw err('BAD_VAULT', tr('sec.badKdf'));
     const base = await subtle().importKey('raw', enc.encode(String(passphrase).normalize('NFKC')), 'PBKDF2', false, ['deriveKey']);
     return subtle().deriveKey({ name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' }, base,
       { name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
@@ -38,7 +44,7 @@
     try {
       const pt = await subtle().decrypt({ name: 'AES-GCM', iv: unb64(box.iv) }, key, unb64(box.ct));
       return JSON.parse(dec.decode(pt));
-    } catch { throw err('BAD_PASSPHRASE', 'Wrong passphrase, or the data was changed.'); }
+    } catch { throw err('BAD_PASSPHRASE', tr('sec.wrongPass')); }
   }
   // Envelope = { v, kdf, iter, salt, iv, ct }. New passphrase => new random salt.
   async function createEnvelope(passphrase, obj, iter) {
@@ -55,12 +61,12 @@
     return Object.assign({ v: env.v, kdf: env.kdf, iter: env.iter, salt: env.salt }, await encryptWith(key, obj));
   }
   function checkPassphrase(p) {
-    if (typeof p !== 'string' || p.length < MIN_PASSPHRASE) throw err('WEAK', 'Use at least ' + MIN_PASSPHRASE + ' characters.');
+    if (typeof p !== 'string' || p.length < MIN_PASSPHRASE) throw err('WEAK', tr('sec.weak', { n: MIN_PASSPHRASE }));
   }
 
   // ---- vault state (chrome.storage) ----------------------------------------------------------------
   const getVault = async () => (await chrome.storage.local.get({ vault: null })).vault;
-  const sessionStore = () => { if (!chrome.storage.session) throw err('NO_SESSION', 'This browser version cannot keep the unlock key for the session.'); return chrome.storage.session; };
+  const sessionStore = () => { if (!chrome.storage.session) throw err('NO_SESSION', tr('sec.noSession')); return chrome.storage.session; };
   async function sessionKey() {
     if (!chrome.storage.session) return null;
     const k = (await chrome.storage.session.get({ [SESSION_KEY]: null }))[SESSION_KEY];
@@ -75,24 +81,24 @@
   // Decrypt the stored profiles; throws {code:'LOCKED'} when there is no (valid) session key.
   async function openVault(vault) {
     const key = await sessionKey();
-    if (!key) throw err('LOCKED', 'Profiles are locked. Enter your passphrase.');
-    try { return (await decryptWith(key, vault)).profiles; } catch { await lock(); throw err('LOCKED', 'Profiles are locked. Enter your passphrase.'); }
+    if (!key) throw lockedError();
+    try { return (await decryptWith(key, vault)).profiles; } catch { await lock(); throw lockedError(); }
   }
   async function sealProfiles(vault, profiles) {
     const key = await sessionKey();
-    if (!key) throw err('LOCKED', 'Profiles are locked. Enter your passphrase.');
+    if (!key) throw lockedError();
     return sealWithKey(key, vault, { profiles });
   }
   // Small secrets (e.g. the optional AI API key) are protected with the same session key as the profiles.
   async function sealSecret(text) {
     const key = await sessionKey();
-    if (!key) throw err('LOCKED', 'Profiles are locked. Enter your passphrase.');
+    if (!key) throw lockedError();
     return encryptWith(key, { s: String(text) });
   }
   async function openSecret(box) {
     const key = await sessionKey();
-    if (!key) throw err('LOCKED', 'Profiles are locked. Enter your passphrase.');
-    try { return (await decryptWith(key, box)).s; } catch { throw err('UNREADABLE', 'The saved secret can no longer be read.'); }
+    if (!key) throw lockedError();
+    try { return (await decryptWith(key, box)).s; } catch { throw err('UNREADABLE', tr('sec.unreadableSecret')); }
   }
   async function unlock(passphrase) {
     const vault = await getVault();
@@ -164,10 +170,10 @@
     const list = (settings.allowedSites || []).map(normalizePattern).filter(Boolean);
     return { allowed: !!host && list.some((p) => hostMatches(host, p)), host };
   }
-  const siteRefusal = (host) => 'Not filled: ' + (host || 'this site') + ' is not on your "Only fill on these sites" list.';
+  const siteRefusal = (host) => tr('sec.siteRefusal', { host: host || tr('sec.thisSite') });
   async function allowHost(host) { // popup: "Always allow this site"
     const p = normalizePattern(host);
-    if (!p) throw err('BAD_SITE', 'Cannot allow this site.');
+    if (!p) throw err('BAD_SITE', tr('sec.cannotAllow'));
     return updateSettings((s) => { if (!s.allowedSites.some((x) => normalizePattern(x) === p)) s.allowedSites = [...s.allowedSites, p]; return s; });
   }
 
@@ -184,7 +190,7 @@
     const vault = await getVault();
     if (!vault) return { file: Object.assign(head, { encrypted: false }, payload), encrypted: false };
     const key = await sessionKey();
-    if (!key) throw err('LOCKED', 'Profiles are locked. Enter your passphrase.');
+    if (!key) throw lockedError();
     return { file: Object.assign(head, { encrypted: true }, await sealWithKey(key, vault, payload)), encrypted: true };
   }
 
@@ -197,22 +203,22 @@
       const o = {}; for (const [k, v] of Object.entries(e)) if (safeKey(k) && ['string', 'number'].includes(typeof v)) o[k] = String(v); return o;
     });
     const custom = (Array.isArray(p.custom) ? p.custom : []).filter((r) => r && typeof r.match === 'string' && typeof r.value === 'string').map((r) => ({ match: r.match, value: r.value }));
-    return { id: typeof p.id === 'string' && p.id ? p.id : 'imp' + Date.now() + '-' + i, name: typeof p.name === 'string' && p.name.trim() ? p.name.trim() : 'Imported',
+    return { id: typeof p.id === 'string' && p.id ? p.id : 'imp' + Date.now() + '-' + i, name: typeof p.name === 'string' && p.name.trim() ? p.name.trim() : tr('profile.imported'),
       data, custom, experience: rows(p.experience), education: rows(p.education) };
   }
   // Accepts a backup file (plain or encrypted) or a single exported profile. Returns clean profiles.
   async function parseBackup(text, passphrase) {
     let obj;
-    try { obj = JSON.parse(text); } catch { throw err('BAD_FILE', 'This is not a JSON file.'); }
-    if (!obj || typeof obj !== 'object') throw err('BAD_FILE', 'This is not a backup file.');
+    try { obj = JSON.parse(text); } catch { throw err('BAD_FILE', tr('sec.notJson')); }
+    if (!obj || typeof obj !== 'object') throw err('BAD_FILE', tr('sec.notBackup'));
     if (obj.app === BACKUP_APP && obj.kind === 'backup' && obj.encrypted) {
-      if (!passphrase) throw err('NEED_PASSPHRASE', 'This backup is encrypted. Enter its passphrase first.');
+      if (!passphrase) throw err('NEED_PASSPHRASE', tr('sec.needPass'));
       obj = (await openEnvelope(passphrase, obj)).data;
     }
     const list = Array.isArray(obj.profiles) ? obj.profiles : obj.data && typeof obj.data === 'object' ? [obj] : null;
-    if (!list) throw err('BAD_FILE', 'No profiles found in this file.');
+    if (!list) throw err('BAD_FILE', tr('sec.noProfiles'));
     const profiles = list.map(cleanProfile).filter(Boolean);
-    if (!profiles.length) throw err('BAD_FILE', 'No profiles found in this file.');
+    if (!profiles.length) throw err('BAD_FILE', tr('sec.noProfiles'));
     return profiles;
   }
   // Merge incoming into existing without losing or overwriting anything.
@@ -223,7 +229,7 @@
     incoming.forEach((p, i) => {
       if (out.some((e) => body(e) === body(p))) { skipped++; return; } // already here
       let q = p;
-      if (ids.has(p.id)) q = Object.assign({}, p, { id: 'imp' + Date.now() + '-' + i, name: p.name + ' (imported)' });
+      if (ids.has(p.id)) q = Object.assign({}, p, { id: 'imp' + Date.now() + '-' + i, name: tr('profile.importedCopy', { name: p.name }) });
       ids.add(q.id); out.push(q); added++;
     });
     return { profiles: out, added, skipped };

@@ -62,6 +62,7 @@ Behind the scenes it looks at each field's label, name, placeholder and `autocom
 - Forms built with React or Vue
 - Fields inside shadow DOM and frames
 - Never submits, never overwrites what you typed (unless you ask)
+- The whole interface comes in **English and Arabic** (right-to-left), switchable in the popup
 
 </td>
 <td width="33%" valign="top">
@@ -234,15 +235,16 @@ No build step: plain JavaScript, loaded as-is by Chrome.
 | `runner.js`, `security.js`, `background.js` | Loads state, injects the filler, passphrase lock, allowlist, keyboard shortcut |
 | `popup.*`, `options.*`, `history.*`, `onboarding.*` | The pages you see |
 | `teach.js`, `ai.js`, `ai-suggest.js` | Right-click teaching and the optional AI drafts |
+| `i18n.js` | Every interface string in English and Arabic, plus language switching |
 | `tests/` | Playwright and Node tests (no network; the Anthropic API is mocked) |
 
 Run the whole suite (needs Node and a global Playwright with Chromium):
 
 ```bash
-for t in tests/*.test.js tests/security.filler.pw.js tests/security.ui.pw.js; do NODE_PATH=$(npm root -g) node "$t" || echo "FAILED: $t"; done
+for t in tests/*.test.js tests/*.pw.js; do NODE_PATH=$(npm root -g) node "$t" || echo "FAILED: $t"; done
 ```
 
-A new field? Add one line to `fields.js`. A new question? Add it to `questions.js`. Both are data, not logic.
+A new field? Add one line to `fields.js`. A new question? Add it to `questions.js`. A new interface language? Copy the `en` block in `i18n.js`, translate the values, register it, and run `node tests/i18n.core.test.js` (it checks that no key or placeholder is missing). All three are data, not logic.
 
 <br>
 

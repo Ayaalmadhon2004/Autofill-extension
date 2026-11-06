@@ -1,6 +1,6 @@
 // Filler behaviour: yes/no robustness, common-question answers, priority order, EN + AR, regression on built-ins.
 const { launch, inject, check, done } = require('./teaching.helpers');
-const FILES = ['fields.js', 'questions.js', 'signature.js', 'filler.js'];
+const FILES = ['i18n.js', 'fields.js', 'questions.js', 'signature.js', 'filler.js'];
 (async () => {
   const { browser, page } = await launch();
   const fill = async (html, profile, settings) => {

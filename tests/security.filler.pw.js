@@ -44,7 +44,7 @@ const pages = {
   const page = await browser.newPage();
   const load = async (html) => {
     await page.setContent(html);
-    for (const f of ['fields.js', 'questions.js', 'groups.js', 'signature.js', 'filler.js']) await page.addScriptTag({ path: path.join(root, f) });
+    for (const f of ['i18n.js', 'fields.js', 'questions.js', 'groups.js', 'signature.js', 'filler.js']) await page.addScriptTag({ path: path.join(root, f) });
   };
   const fill = (p, s) => page.evaluate(([p, s]) => window.__formFill.fill(p, s), [p, s || {}]);
   const vals = (sel) => page.$$eval(sel, (els) => els.map((e) => e.value));

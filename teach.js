@@ -4,6 +4,8 @@
 (function () {
   if (window.__formFillTeach) return;
   const S = window.FORMFILL_SIG;
+  const I18N = window.FORMFILL_I18N; // the language is passed to start() by the background worker
+  const t = (key, vars) => I18N.t(key, vars);
   const FIELD = 'input, textarea, select';
   const SKIP = new Set(['hidden', 'submit', 'button', 'file', 'password', 'image', 'reset']);
   let lastTarget = null;
@@ -65,28 +67,28 @@
     const root = host.attachShadow({ mode: 'open' });
     const style = el('style', { textContent: CSS });
     const wrap = el('div', { className: 'wrap' });
-    const box = el('div', { className: 'box', role: 'dialog' });
+    const box = el('div', { className: 'box', role: 'dialog', dir: I18N.dirOf(), lang: I18N.getLang() });
     box.setAttribute('aria-modal', 'true');
     box.setAttribute('aria-labelledby', 'ff-title');
     wrap.appendChild(box); root.append(style, wrap);
 
-    const title = el('h2', { id: 'ff-title', textContent: 'Teach Form Filler this field' });
+    const title = el('h2', { id: 'ff-title', textContent: t('teach.title') });
     const done = el('p', { role: 'status' });
     box.append(title);
 
     if (!field) {
-      box.append(el('p', { textContent: 'Right-click a form field (a text box, dropdown, radio button or checkbox) and choose this option again.' }));
-      const ok = el('button', { type: 'button', textContent: 'Close' });
+      box.append(el('p', { textContent: t('teach.noField') }));
+      const ok = el('button', { type: 'button', textContent: t('common.close') });
       ok.onclick = () => closePrompt(true);
       box.append(el('div', { className: 'row' }, ok));
     } else {
       const form = el('form');
-      form.append(el('p', {}, 'When a field’s label contains ', el('code', { textContent: info.match || '(unnamed field)' }),
-        ', fill it with your answer' + (profileName ? ' (saved to profile “' + profileName + '”).' : '.')));
+      const code = el('code', { textContent: info.match || t('teach.unnamed'), dir: 'auto' });
+      form.append(el('p', {}, ...I18N.nodes(profileName ? 'teach.introProfile' : 'teach.intro', { match: code, profile: profileName })));
       let input;
       if (info.options.length) {
         input = el('select', { id: 'ff-answer' });
-        input.add(new Option('Choose an answer…', ''));
+        input.add(new Option(t('teach.choose'), ''));
         const opts = info.options.slice();
         if (existing && !opts.some((o) => o === existing)) opts.push(existing);
         for (const o of opts) input.add(new Option(o, o));
@@ -94,18 +96,18 @@
       else input = el('input', { id: 'ff-answer', type: 'text' });
       input.dir = 'auto';
       if (existing) input.value = existing;
-      const lab = el('label', { htmlFor: 'ff-answer', textContent: 'Answer' });
-      const cancel = el('button', { type: 'button', className: 'sec', textContent: 'Cancel' });
-      const save = el('button', { type: 'submit', textContent: 'Save answer' });
+      const lab = el('label', { htmlFor: 'ff-answer', textContent: t('common.answer') });
+      const cancel = el('button', { type: 'button', className: 'sec', textContent: t('common.cancel') });
+      const save = el('button', { type: 'submit', textContent: t('teach.save') });
       cancel.onclick = () => closePrompt(true);
       form.append(lab, input, el('div', { className: 'row' }, cancel, save), done);
       form.onsubmit = async (e) => {
         e.preventDefault();
         const value = input.value.trim();
-        if (!info.match || !value) { done.textContent = !info.match ? 'This field has no label to match on.' : 'Type or choose an answer first.'; input.focus(); return; }
+        if (!info.match || !value) { done.textContent = !info.match ? t('teach.noLabel') : t('teach.empty'); input.focus(); return; }
         const r = await send({ type: 'formfill-teach-save', match: info.match, value });
-        if (!r || !r.ok) { done.textContent = 'Could not save. Try again.'; return; }
-        done.className = 'ok'; done.textContent = 'Saved ✓ It will be used next time you fill.';
+        if (!r || !r.ok) { done.textContent = t('teach.saveFail'); return; }
+        done.className = 'ok'; done.textContent = t('teach.saved');
         save.disabled = true;
         setTimeout(() => closePrompt(true), 1200);
       };
@@ -130,7 +132,8 @@
     if (first) first.focus();
   }
 
-  async function start() {
+  async function start(lang) {
+    if (lang) I18N.setLang(lang, { persist: false });
     const field = target();
     const info = field ? S.describe(field) : null;
     let existing = '', profileName = '';

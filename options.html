@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>My profile · One-Click Form Filler</title>
+<html lang="en" dir="ltr"><head><meta charset="utf-8"><title data-i18n="options.docTitle"></title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
   body{font:15px/1.5 system-ui,sans-serif;max-width:760px;margin:0 auto;padding:20px 16px 80px;color:#1b1b1f;background:#fff}
@@ -14,55 +14,58 @@
   button.sec{background:#fff;color:#1a56db;border:1px solid #1a56db}
   :focus-visible{outline:3px solid #f5a623;outline-offset:2px}
   .rule{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px}
-  .bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #d5d7dd;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .bar{position:fixed;inset-inline:0;bottom:0;background:#fff;border-top:1px solid #d5d7dd;padding:10px 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   /* repeating sections (options-entries.js) */
   .entry{margin:0 0 12px;background:#fafbfc}
   .entry-bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
   #msg{font-weight:600;color:#17663a}
+  [hidden]{display:none!important}
+  .ff-lang{max-width:320px;margin:0 0 14px}
 </style></head><body>
-<h1>My profile</h1>
-<p>Everything is saved only in this browser. Leave a field empty to skip it.</p>
-<fieldset><legend>Profiles</legend>
+<div id="langBox"></div>
+<h1 data-i18n="options.h1"></h1>
+<p data-i18n="options.intro"></p>
+<fieldset><legend data-i18n="options.profiles"></legend>
   <div class="grid">
-    <label>Editing profile <select id="psel"></select></label>
-    <label>Profile name <input id="pname" dir="auto"></label>
+    <label><span data-i18n="options.editing"></span> <select id="psel"></select></label>
+    <label><span data-i18n="options.profileName"></span> <input id="pname" dir="auto"></label>
   </div>
   <p style="margin:12px 0 0;display:flex;gap:8px;flex-wrap:wrap">
-    <button type="button" class="sec" id="pnew">New empty profile</button>
-    <button type="button" class="sec" id="pdup">Duplicate (e.g. English → Arabic)</button>
-    <button type="button" class="sec" id="pdel">Delete</button>
+    <button type="button" class="sec" id="pnew" data-i18n="options.newProfile"></button>
+    <button type="button" class="sec" id="pdup" data-i18n="options.dupProfile"></button>
+    <button type="button" class="sec" id="pdel" data-i18n="options.delProfile"></button>
   </p>
 </fieldset>
 <form id="form"></form>
-<fieldset><legend>Common questions</legend>
-  <p>Answer these once and they are filled wherever they appear, in English or Arabic forms. Your own custom rules below take priority; leave an answer empty to skip it.</p>
+<fieldset><legend data-i18n="options.questions.legend"></legend>
+  <p data-i18n="options.questions.help"></p>
   <div id="answers" class="grid"></div>
 </fieldset>
 <div id="entries"></div><!-- repeating sections, see options-entries.js -->
-<fieldset><legend>Custom rules</legend>
-  <p>Teach it a question: if a field's label contains the text on the left, it gets the value on the right (e.g. <em>work authorization</em> → <em>Yes</em>; for radio buttons the value is the answer's text).</p>
+<fieldset><legend data-i18n="options.rules.legend"></legend>
+  <p data-i18n="options.rules.help"></p>
   <div id="rules"></div>
-  <button type="button" class="sec" id="addRule">Add rule</button>
+  <button type="button" class="sec" id="addRule" data-i18n="options.rules.add"></button>
 </fieldset>
-<fieldset id="documents"><legend>Documents</legend>
-  <p>Your CV is attached to resume / CV upload fields (PDF or DOCX, up to 5 MB). Stored only in this browser, one per profile.</p>
-  <p id="cvCurrent" role="status">No CV uploaded for this profile.</p>
-  <label>Upload CV <input type="file" id="cvFile" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></label>
-  <p style="margin:12px 0 0"><button type="button" class="sec" id="cvRemove">Remove CV</button> <span id="cvMsg" role="status"></span></p>
+<fieldset id="documents"><legend data-i18n="options.docs.legend"></legend>
+  <p data-i18n="options.docs.help"></p>
+  <p id="cvCurrent" role="status"></p>
+  <label><span data-i18n="options.docs.upload"></span> <input type="file" id="cvFile" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></label>
+  <p style="margin:12px 0 0"><button type="button" class="sec" id="cvRemove" data-i18n="options.docs.remove"></button> <span id="cvMsg" role="status"></span></p>
 </fieldset>
 <!-- tracker setting (self-contained, see bottom of options.js) -->
-<fieldset><legend>Application tracker</legend>
-  <label style="display:flex;gap:10px;align-items:center;min-height:44px"><input type="checkbox" id="trackApps" style="width:24px;height:24px;margin:0"><span id="trackLbl">Track my applications</span></label>
-  <p style="margin:0">Remembers the page address (without anything after “?”), title and date each time a fill works. Stored only in this browser. <a href="history.html">View my applications</a></p>
+<fieldset><legend data-i18n="options.tracker.legend"></legend>
+  <label style="display:flex;gap:10px;align-items:center;min-height:44px"><input type="checkbox" id="trackApps" style="width:24px;height:24px;margin:0"><span id="trackLbl" data-i18n="options.tracker.label"></span></label>
+  <p style="margin:0"><span data-i18n="options.tracker.text"></span> <a href="history.html" data-i18n="options.tracker.view"></a></p>
 </fieldset>
 <div id="ai"></div><!-- optional AI suggestions, see options-ai.js -->
 <div id="security"></div><!-- security features, see options-security.js -->
 <div class="bar">
-  <button type="button" id="save">Save</button>
-  <button type="button" class="sec" id="export">Export JSON</button>
-  <button type="button" class="sec" id="importBtn">Import JSON</button>
+  <button type="button" id="save" data-i18n="common.save"></button>
+  <button type="button" class="sec" id="export" data-i18n="options.export"></button>
+  <button type="button" class="sec" id="importBtn" data-i18n="options.import"></button>
   <input type="file" id="importFile" accept="application/json" hidden>
   <span id="msg" role="status"></span>
 </div>
-<script src="security.js"></script><script src="fields.js"></script><script src="groups.js"></script><script src="questions.js"></script><script src="runner.js"></script><script src="ai.js"></script><script src="options-entries.js"></script><script src="options-questions.js"></script><script src="options-security.js"></script><script src="options-ai.js"></script><script src="options.js"></script><script src="documents.js"></script>
+<script src="i18n.js"></script><script src="security.js"></script><script src="fields.js"></script><script src="groups.js"></script><script src="questions.js"></script><script src="runner.js"></script><script src="ai.js"></script><script src="options-entries.js"></script><script src="options-questions.js"></script><script src="options-security.js"></script><script src="options-ai.js"></script><script src="options.js"></script><script src="documents.js"></script>
 </body></html>

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>Welcome · One-Click Form Filler</title>
+<html lang="en" dir="ltr"><head><meta charset="utf-8"><title data-i18n="onboarding.title"></title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
   body{font:16px/1.55 system-ui,sans-serif;max-width:620px;margin:0 auto;padding:24px 16px 60px;color:#1b1b1f;background:#fff}
@@ -8,7 +8,7 @@
   .step{border:1px solid #d5d7dd;border-radius:12px;padding:16px 20px;margin-top:16px}
   .step[hidden]{display:none}
   label{display:block;font-weight:600;font-size:14px;margin-bottom:12px}
-  input{display:block;width:100%;box-sizing:border-box;min-height:44px;padding:8px 10px;margin-top:4px;font:inherit;border:1px solid #6b7080;border-radius:6px}
+  input,select{display:block;width:100%;box-sizing:border-box;min-height:44px;padding:8px 10px;margin-top:4px;font:inherit;border:1px solid #6b7080;border-radius:6px;background:#fff;color:inherit}
   button,a.btn{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:44px;min-width:44px;padding:0 18px;font:inherit;font-weight:600;border:1px solid #1a56db;border-radius:8px;background:#1a56db;color:#fff;cursor:pointer;text-decoration:none}
   button.sec{background:#fff;color:#1a56db}
   :focus-visible{outline:3px solid #f5a623;outline-offset:2px}
@@ -16,38 +16,41 @@
   .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
   kbd{border:1px solid #6b7080;border-radius:4px;padding:1px 6px;font:inherit;font-size:14px;background:#f3f4f7}
   .promise{background:#eef3fd;border-radius:8px;padding:10px 14px}
+  .ff-lang{margin:0 0 12px;max-width:320px}
+  ol{padding-inline-start:24px}
   #msg{font-weight:600;color:#17663a;min-height:24px}
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style></head><body>
-<h1 id="t"></h1>
+<div id="langBox"></div>
+<h1 id="t" data-i18n="onboarding.title"></h1>
 <p class="muted" id="count" aria-live="polite"></p>
 
 <section class="step" id="s1" aria-labelledby="h1a">
-  <h2 id="h1a" tabindex="-1"></h2>
-  <p id="s1a"></p>
-  <p class="promise" id="s1b"></p>
+  <h2 id="h1a" tabindex="-1" data-i18n="onboarding.s1h"></h2>
+  <p id="s1a" data-i18n="onboarding.s1a"></p>
+  <p class="promise" id="s1b" data-i18n="onboarding.s1b"></p>
 </section>
 
 <section class="step" id="s2" aria-labelledby="h2a" hidden>
-  <h2 id="h2a" tabindex="-1"></h2>
-  <p id="s2a"></p>
+  <h2 id="h2a" tabindex="-1" data-i18n="onboarding.s2h"></h2>
+  <p id="s2a" data-i18n="onboarding.s2a"></p>
   <form id="form" autocomplete="off">
-    <label><span id="lName"></span><input name="fullName" dir="auto" autocomplete="name"></label>
-    <label><span id="lEmail"></span><input name="email" type="email" autocomplete="email"></label>
-    <label><span id="lPhone"></span><input name="phone" type="tel" autocomplete="tel"></label>
-    <label><span id="lLinkedin"></span><input name="linkedin" type="url" placeholder="https://www.linkedin.com/in/…"></label>
+    <label><span id="lName" data-i18n="field.fullName"></span><input name="fullName" dir="auto" autocomplete="name"></label>
+    <label><span id="lEmail" data-i18n="field.email"></span><input name="email" type="email" dir="ltr" autocomplete="email"></label>
+    <label><span id="lPhone" data-i18n="field.phone"></span><input name="phone" type="tel" dir="ltr" autocomplete="tel"></label>
+    <label><span id="lLinkedin" data-i18n="field.linkedin"></span><input name="linkedin" type="url" dir="ltr" placeholder="https://www.linkedin.com/in/…"></label>
   </form>
   <p id="msg" role="status"></p>
 </section>
 
 <section class="step" id="s3" aria-labelledby="h3a" hidden>
-  <h2 id="h3a" tabindex="-1"></h2>
-  <ol id="s3list"></ol>
+  <h2 id="h3a" tabindex="-1" data-i18n="onboarding.s3h"></h2>
+  <ol id="s3list"><li data-i18n="onboarding.s3.1"></li><li data-i18n="onboarding.s3.2"></li><li data-i18n="onboarding.s3.3"></li><li data-i18n="onboarding.s3.4"></li></ol>
 </section>
 
 <div class="row">
-  <button type="button" class="sec" id="back"></button>
+  <button type="button" class="sec" id="back" data-i18n="onboarding.back"></button>
   <button type="button" id="next"></button>
 </div>
-<script src="security.js"></script><script src="runner.js"></script><script src="onboarding.js"></script>
+<script src="i18n.js"></script><script src="security.js"></script><script src="runner.js"></script><script src="onboarding.js"></script>
 </body></html>

@@ -1,23 +1,4 @@
-// First-run welcome page. All user-facing strings live in this one object (for translation later).
-const T = {
-  title: 'Welcome to One-Click Form Filler',
-  stepOf: (n, total) => `Step ${n} of ${total}`,
-  s1h: 'What it does', 
-  s1a: 'It fills job, internship and application forms in one click, using a profile you write once. You can keep several profiles, for example English and Arabic.',
-  s1b: 'Privacy promise: your data stays in this browser. Nothing is sent anywhere, and the extension never submits a form for you.',
-  s2h: 'Create your first profile',
-  s2a: 'Just the basics for now. You can add everything else later in Options. Leave a field empty to skip it.',
-  lName: 'Full name', lEmail: 'Email', lPhone: 'Phone', lLinkedin: 'LinkedIn URL',
-  saveError: 'Could not save. Please try again.',
-  s3h: 'How to fill a form',
-  s3: [
-    'Open an application form, click the extension icon, then press "Fill this page".',
-    'Or press Ctrl+Shift+F (Command+Shift+F on Mac) on the form page. The icon shows how many fields were filled.',
-    'Review everything, then submit yourself.',
-    'Updates: the extension updates itself from the Chrome Web Store. If you installed it from a folder, replace the files, then open chrome://extensions and press the reload button on this extension.'
-  ],
-  back: 'Back', next: 'Next', saveNext: 'Save and continue', finish: 'Finish and open my profile'
-};
+// First-run welcome page. All user-facing strings live in i18n.js ('onboarding.*'); static ones are data-i18n attributes in the HTML.
 const $ = (id) => document.getElementById(id);
 const TOTAL = 3;
 let step = 1;
@@ -25,9 +6,9 @@ let step = 1;
 function show(n, moveFocus) {
   step = n;
   for (let i = 1; i <= TOTAL; i++) $('s' + i).hidden = i !== n;
-  $('count').textContent = T.stepOf(n, TOTAL);
+  $('count').textContent = t('onboarding.stepOf', { n, total: TOTAL });
   $('back').hidden = n === 1;
-  $('next').textContent = n === 2 ? T.saveNext : n === TOTAL ? T.finish : T.next;
+  $('next').textContent = t(n === 2 ? 'onboarding.saveNext' : n === TOTAL ? 'onboarding.finish' : 'onboarding.next');
   if (moveFocus) $('h' + n + 'a').focus(); // announce the new step to screen readers
 }
 
@@ -46,14 +27,10 @@ async function saveProfile() {
 }
 
 (async () => {
-  document.title = T.title;
-  $('t').textContent = T.title;
-  $('h1a').textContent = T.s1h; $('s1a').textContent = T.s1a; $('s1b').textContent = T.s1b;
-  $('h2a').textContent = T.s2h; $('s2a').textContent = T.s2a;
-  $('lName').textContent = T.lName; $('lEmail').textContent = T.lEmail; $('lPhone').textContent = T.lPhone; $('lLinkedin').textContent = T.lLinkedin;
-  $('h3a').textContent = T.s3h;
-  for (const t of T.s3) { const li = document.createElement('li'); li.textContent = t; $('s3list').appendChild(li); }
-  $('back').textContent = T.back;
+  await FORMFILL_I18N.ready;
+  FORMFILL_I18N.applyDom(document);
+  FORMFILL_I18N.mountSwitcher($('langBox'));
+  FORMFILL_I18N.onChange(() => { show(step, false); $('msg').textContent = ''; }); // texts: applyDom; counters and buttons: show()
   // prefill from the current profile so reopening the page never loses anything
   const { profile } = await loadState();
   for (const el of $('form').elements) if (el.name && profile.data[el.name]) el.value = profile.data[el.name];
@@ -62,7 +39,7 @@ async function saveProfile() {
   $('next').onclick = async () => {
     if (step === 2) {
       if (!$('form').reportValidity()) return;
-      try { await saveProfile(); } catch { $('msg').textContent = T.saveError; return; }
+      try { await saveProfile(); } catch { $('msg').textContent = t('onboarding.saveError'); return; }
     }
     if (step === TOTAL) { chrome.runtime.openOptionsPage(); return; }
     show(step + 1, true);

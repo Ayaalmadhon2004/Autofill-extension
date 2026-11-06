@@ -7,13 +7,13 @@ function renderEntries(profile) {
   for (const [name, sec] of Object.entries(window.FORMFILL_GROUPS.SECTIONS)) {
     const fs = document.createElement('fieldset');
     fs.className = 'entry-section'; fs.dataset.section = name;
-    const lg = document.createElement('legend'); lg.textContent = sec.title; fs.appendChild(lg);
+    const lg = document.createElement('legend'); lg.textContent = t('section.' + name + '.title'); fs.appendChild(lg);
     const hint = document.createElement('p');
-    hint.textContent = 'Most recent first. A form with one block gets the first entry; a form with several blocks gets them in order.';
+    hint.textContent = t('entries.hint');
     fs.appendChild(hint);
     const list = document.createElement('div'); list.className = 'entry-list'; fs.appendChild(list);
     const add = document.createElement('button');
-    add.type = 'button'; add.className = 'sec'; add.textContent = sec.addLabel;
+    add.type = 'button'; add.className = 'sec'; add.textContent = t('section.' + name + '.add');
     add.onclick = () => { const card = addEntry(name, {}); card.querySelector('input,textarea').focus(); };
     fs.appendChild(add);
     root.appendChild(fs);
@@ -28,7 +28,7 @@ function addEntry(name, entry) {
   card.appendChild(document.createElement('legend'));
   const grid = document.createElement('div'); grid.className = 'grid';
   for (const f of sec.fields) {
-    const l = document.createElement('label'); l.textContent = f.label;
+    const l = document.createElement('label'); l.textContent = t(f.labelKey);
     const i = document.createElement(f.type === 'textarea' ? 'textarea' : 'input');
     i.dataset.key = f.key; i.dir = 'auto'; i.value = (entry && entry[f.key]) || '';
     l.appendChild(i); grid.appendChild(l);
@@ -40,11 +40,11 @@ function addEntry(name, entry) {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'sec'; b.textContent = txt;
     b.onclick = () => fn(b); bar.appendChild(b); return b;
   };
-  mk('Move up', (b) => moveEntry(card, -1, b));
-  mk('Move down', (b) => moveEntry(card, 1, b));
-  mk('Remove', () => {
+  mk(t('entries.up'), (b) => moveEntry(card, -1, b));
+  mk(t('entries.down'), (b) => moveEntry(card, 1, b));
+  mk(t('entries.remove'), () => {
     const nextFocus = card.nextElementSibling || card.previousElementSibling || list.parentElement.querySelector('.entry-section > button');
-    card.remove(); refreshEntryLabels(list); flashMsg(sec.itemLabel + ' removed');
+    card.remove(); refreshEntryLabels(list); flashMsg(t('entries.removed', { item: t('section.' + name + '.item') }));
     (nextFocus && nextFocus.querySelector ? nextFocus.querySelector('input,textarea') || nextFocus : nextFocus).focus();
   });
   card.appendChild(bar);
@@ -56,24 +56,23 @@ function addEntry(name, entry) {
 function moveEntry(card, dir, btn) {
   const list = card.parentElement;
   const other = dir < 0 ? card.previousElementSibling : card.nextElementSibling;
-  if (!other) { flashMsg(dir < 0 ? 'Already first' : 'Already last'); return; }
+  if (!other) { flashMsg(dir < 0 ? t('entries.alreadyFirst') : t('entries.alreadyLast')); return; }
   if (dir < 0) list.insertBefore(card, other); else list.insertBefore(other, card);
   refreshEntryLabels(list);
   btn.focus();
-  flashMsg('Moved to position ' + ([...list.children].indexOf(card) + 1));
+  flashMsg(t('entries.moved', { n: [...list.children].indexOf(card) + 1 }));
 }
 
 // Renumber legends and give every button an unambiguous accessible name ("Move up Experience 2").
 function refreshEntryLabels(list) {
   const name = list.parentElement.dataset.section;
-  const sec = window.FORMFILL_GROUPS.SECTIONS[name];
   [...list.children].forEach((card, n) => {
-    const title = sec.itemLabel + ' ' + (n + 1);
+    const title = t('entries.itemTitle', { item: t('section.' + name + '.item'), n: n + 1 });
     card.firstChild.textContent = title;
     const [up, down, rm] = card.querySelectorAll('.entry-bar button');
-    up.setAttribute('aria-label', 'Move up ' + title);
-    down.setAttribute('aria-label', 'Move down ' + title);
-    rm.setAttribute('aria-label', 'Remove ' + title);
+    up.setAttribute('aria-label', t('entries.upFor', { title }));
+    down.setAttribute('aria-label', t('entries.downFor', { title }));
+    rm.setAttribute('aria-label', t('entries.removeFor', { title }));
   });
 }
 

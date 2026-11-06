@@ -7,7 +7,7 @@ function env(initial) {
     async set(o) { Object.assign(store, JSON.parse(JSON.stringify(o))); }
   } } };
   const ctx = vm.createContext({ chrome, URL, Date, Math, console });
-  vm.runInContext(fs.readFileSync(__dirname + '/../runner.js', 'utf8'), ctx);
+  for (const f of ['i18n.js', 'runner.js']) vm.runInContext(fs.readFileSync(__dirname + '/../' + f, 'utf8'), ctx);
   return { store, run: (...a) => vm.runInContext('recordApplication', ctx)(...a) };
 }
 const tab = { url: 'https://jobs.example.com/apply/123?token=SECRET&x=1#section', title: 'Engineer - Example' };

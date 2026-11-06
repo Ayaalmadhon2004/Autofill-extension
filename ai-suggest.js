@@ -3,21 +3,8 @@
 // background worker for a draft, and only writes into the field when the user clicks "Insert into field".
 (function () {
   if (window.__formFillAI) return;
-  const T = { // all user-visible strings of this file (for localisation)
-    title: 'Suggest an answer with AI',
-    questionLabel: 'Question',
-    draftLabel: 'Draft answer (you can edit it)',
-    note: 'Drafted by AI from the details you allowed — check it before sending.',
-    generating: 'Drafting an answer…',
-    ready: 'Draft ready. Review and edit it, then insert it.',
-    insert: 'Insert into field',
-    regenerate: 'Regenerate',
-    cancel: 'Cancel',
-    close: 'Close',
-    noField: 'Click into a text box or text area first (or right-click it), then choose this option again.',
-    errorPrefix: 'Could not draft an answer: ',
-    unknownError: 'Something went wrong. Try again.'
-  };
+  const I18N = window.FORMFILL_I18N; // all texts live in i18n.js; the language is passed to start() by the background worker
+  const t = (key, vars) => I18N.t(key, vars);
   const S = window.FORMFILL_SIG;
   const TEXT_TYPES = new Set(['', 'text', 'search']);
   let lastTarget = null;
@@ -114,36 +101,36 @@
     host.setAttribute('data-formfill-ai', '');
     const root = host.attachShadow({ mode: 'open' });
     const wrap = el('div', { className: 'wrap' });
-    const box = el('div', { className: 'box', role: 'dialog' });
+    const box = el('div', { className: 'box', role: 'dialog', dir: I18N.dirOf(), lang: I18N.getLang() });
     box.setAttribute('aria-modal', 'true');
     box.setAttribute('aria-labelledby', 'ff-ai-title');
     wrap.appendChild(box); root.append(el('style', { textContent: CSS }), wrap);
-    box.append(el('h2', { id: 'ff-ai-title', textContent: T.title }));
+    box.append(el('h2', { id: 'ff-ai-title', textContent: t('aiprompt.title') }));
     const status = el('p', { role: 'status' });
 
     if (!field) {
-      const ok = el('button', { type: 'button', textContent: T.close });
+      const ok = el('button', { type: 'button', textContent: t('common.close') });
       ok.onclick = () => closePrompt(true);
-      box.append(el('p', { textContent: T.noField }), el('div', { className: 'row' }, ok));
+      box.append(el('p', { textContent: t('aiprompt.noField') }), el('div', { className: 'row' }, ok));
     } else {
-      const q = el('p', { className: 'q', id: 'ff-ai-q' }); q.append(el('strong', { textContent: T.questionLabel + ': ' }), question);
+      const q = el('p', { className: 'q', id: 'ff-ai-q' }); q.append(el('strong', { textContent: t('aiprompt.questionLabel') + ': ' }), el('bdi', { textContent: question }));
       const area = el('textarea', { id: 'ff-ai-draft' }); area.dir = 'auto';
-      const lab = el('label', { htmlFor: 'ff-ai-draft', textContent: T.draftLabel });
-      const note = el('p', { className: 'note', textContent: T.note });
-      const insert = el('button', { type: 'button', textContent: T.insert, disabled: true });
-      const regen = el('button', { type: 'button', className: 'sec', textContent: T.regenerate });
-      const cancel = el('button', { type: 'button', className: 'sec', textContent: T.cancel });
+      const lab = el('label', { htmlFor: 'ff-ai-draft', textContent: t('aiprompt.draftLabel') });
+      const note = el('p', { className: 'note', textContent: t('aiprompt.note') });
+      const insert = el('button', { type: 'button', textContent: t('aiprompt.insert'), disabled: true });
+      const regen = el('button', { type: 'button', className: 'sec', textContent: t('aiprompt.regenerate') });
+      const cancel = el('button', { type: 'button', className: 'sec', textContent: t('common.cancel') });
       box.append(q, lab, area, note, status, el('div', { className: 'row' }, cancel, regen, insert));
       let seq = 0;
       const generate = async () => { // only ever runs from an explicit user action (menu / popup click, or Regenerate)
         const mine = ++seq;
         insert.disabled = true; regen.disabled = true;
-        status.className = ''; status.textContent = T.generating;
+        status.className = ''; status.textContent = t('aiprompt.generating');
         const r = await send({ type: 'formfill-ai-draft', question, page: pageContext() });
         if (mine !== seq || !open) return;
         regen.disabled = false;
-        if (r && r.ok) { area.value = r.text; insert.disabled = false; status.className = 'ok'; status.textContent = T.ready; area.focus(); }
-        else { status.className = 'bad'; status.textContent = '⚠ ' + T.errorPrefix + ((r && r.error) || T.unknownError); }
+        if (r && r.ok) { area.value = r.text; insert.disabled = false; status.className = 'ok'; status.textContent = t('aiprompt.ready'); area.focus(); }
+        else { status.className = 'bad'; status.textContent = '⚠ ' + t('aiprompt.error', { error: (r && r.error) || t('aiprompt.unknownError') }); }
       };
       area.addEventListener('input', () => { insert.disabled = !area.value.trim(); });
       regen.onclick = generate;
@@ -175,6 +162,7 @@
 
   // opts.onlyIfField: popup path runs in every frame; only the frame that holds a suitable field opens the prompt.
   function start(opts) {
+    if (opts && opts.lang) I18N.setLang(opts.lang, { persist: false });
     const field = targetField();
     if (!field && opts && opts.onlyIfField) return false;
     show(field, field ? questionOf(field) : '', true);

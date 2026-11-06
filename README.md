@@ -8,6 +8,7 @@
 ![Local first](https://img.shields.io/badge/Your%20data-stays%20in%20your%20browser-0d9488?style=for-the-badge)
 ![No build step](https://img.shields.io/badge/Setup-no%20build%20step-f5a623?style=for-the-badge)
 ![English and Arabic](https://img.shields.io/badge/English%20%2B%20%D8%B9%D8%B1%D8%A8%D9%8A-forms%20and%20profiles-7c3aed?style=for-the-badge)
+![MIT License](https://img.shields.io/badge/License-MIT-16a34a?style=for-the-badge)
 
 **[The idea](#the-idea)** · **[See it work](#see-it-work)** · **[Features](#what-it-can-do)** · **[Install](#install-in-two-minutes)** · **[Privacy](#privacy-and-security)** · **[FAQ](#questions-you-might-have)** · **[عربي](README.ar.md)**
 
@@ -251,5 +252,7 @@ A new field? Add one line to `fields.js`. A new question? Add it to `questions.j
 <div align="center">
 
 Made for anyone who is tired of typing their own name.
+
+Released under the [MIT License](LICENSE).
 
 </div>

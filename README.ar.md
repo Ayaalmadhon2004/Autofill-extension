@@ -8,6 +8,7 @@
 ![Local first](https://img.shields.io/badge/Your%20data-stays%20in%20your%20browser-0d9488?style=for-the-badge)
 ![No build step](https://img.shields.io/badge/Setup-no%20build%20step-f5a623?style=for-the-badge)
 ![English and Arabic](https://img.shields.io/badge/English%20%2B%20%D8%B9%D8%B1%D8%A8%D9%8A-forms%20and%20profiles-7c3aed?style=for-the-badge)
+![MIT License](https://img.shields.io/badge/License-MIT-16a34a?style=for-the-badge)
 
 **[الفكرة](#الفكرة)** · **[شاهدها تعمل](#شاهدها-تعمل)** · **[الميزات](#ماذا-تستطيع-أن-تفعل)** · **[التثبيت](#التثبيت-في-دقيقتين)** · **[الخصوصية](#الخصوصية-والأمان)** · **[أسئلة شائعة](#أسئلة-شائعة)** · **[English](README.md)**
 
@@ -237,6 +238,8 @@ for t in tests/*.test.js tests/*.pw.js; do NODE_PATH=$(npm root -g) node "$t" ||
 <div align="center">
 
 صُنعت لكل من تعب من كتابة اسمه.
+
+منشورة تحت [رخصة MIT](LICENSE).
 
 </div>
 

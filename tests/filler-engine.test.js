@@ -23,11 +23,11 @@ const run = (page, withCv) => page.evaluate(([p, c]) => window.__formFill.fill(p
   const browser = await chromium.launch();
   const page = await browser.newPage();
 
-  // Regression: plain English + Arabic form, compare with the pre-change filler.js on main
+  // Regression: plain English + Arabic form, compare with the filler.js from before the engine work (8062327)
   const normal = `<form><label>First name <input name=a></label><label for=e>Email</label><input id=e>
     <label>Last name<input></label><label>الجامعة <input></label><label>Phone <input type=tel></label><select aria-label="Country"><option value="">-</option><option>Egypt</option></select></form>`;
   const dump = () => page.evaluate(() => [...document.querySelectorAll('input,select')].map((e) => e.value));
-  const oldSrc = execSync('git show origin/main:filler.js', { cwd: root }).toString();
+  const oldSrc = execSync('git show 8062327:filler.js', { cwd: root }).toString();
   await load(page, normal, oldSrc);
   const rOld = await page.evaluate((p) => window.__formFill.fill(p, {}), profile); const vOld = await dump();
   await load(page, normal);
